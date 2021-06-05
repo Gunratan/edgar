@@ -65,7 +65,7 @@ getFilingInfo <- function(firm.identifier, filing.year, quarter = c(1, 2, 3, 4),
       
       load(filepath)  # Import master Index
       
-      if(form.type == "ALL"){
+      if((length(form.type) == 1) && (form.type == "ALL")){
         form.type <- unique(year.master$form.type)
       }
       
