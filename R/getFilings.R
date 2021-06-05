@@ -115,11 +115,11 @@ getFilings <- function(cik.no = "ALL", form.type = "ALL", filing.year, quarter =
     
     load(filepath)  # Import master Index
     
-    if(form.type == "ALL"){
+    if((length(form.type) == 1) && (form.type == "ALL")){
       form.type <- unique(year.master$form.type)
     }
     
-    if( cik.no == "ALL" ){
+    if(length(cik.no) == 1) && (cik.no == "ALL" )){
       year.master <- year.master[which(year.master$form.type %in% form.type 
                                        & year.master$quarter %in% quarter), ]
     } else {

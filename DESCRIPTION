@@ -1,8 +1,8 @@
 Package: edgar
 Type: Package
 Title: Tool for the U.S. SEC EDGAR Retrieval and Parsing of Corporate Filings
-Version: 2.0.3
-Date: 2020-05-20
+Version: 2.0.4
+Date: 2021-06-05
 Author: Gunratan Lonare <lonare.gunratan@gmail.com>, Bharat Patil
     <bharatspatil@gmail.com>
 Maintainer: Gunratan Lonare <lonare.gunratan@gmail.com>
