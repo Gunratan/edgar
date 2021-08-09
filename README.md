@@ -19,14 +19,17 @@ The package is maintained on
 
 # Implementation of the edgar package
 
-## SEC guidelines on downlaoding EDGAR files
+## SEC guidelines on downloading EDGAR files
+Please download only what you need and moderate downlaod requests to minimize server load. A user is required to declare user agent in request headers. The following link explains these requirements in details.
 https://www.sec.gov/os/accessing-edgar-data
+
+Accordingly, `edgar` package requires user to pass user agent in every function. Its houdl be in the form of "Your Name Contact@domain.com"
 
 ## Download daily filing information
 The `getDailyMaster` function takes date as an input parameter from a user, and downloads master index for the date from the U.S. SEC EDGAR server https://www.sec.gov/Archives/edgar/daily-index/. It strips headers and converts this daily filing information into dataframe format. Function creates new directory 'Daily Indexes' into working directory to save these downloaded daily master index files in Rda format.
 
 ``` r
-output <- getDailyMaster('08/09/2016')
+output <- getDailyMaster('08/09/2016', useragent)
 head(output)
 #>       cik             company.name form.type date.filed
 #> 1 1000045   NICHOLAS FINANCIAL INC      10-Q   20160809
@@ -40,7 +43,7 @@ head(output)
 ## Download quarterly filing information
 The `getMasterIndex` function takes filing year as an input parameter from a user, downloads quarterly master indexes from the US SEC server https://www.sec.gov/Archives/edgar/full-index/. It then strips headers from the master index files, converts them into dataframe, and merges such quarterly dataframes into yearly dataframe, and stores them in Rda format. It has ability to download master indexes for multiple years based on the user input. This function creates a new directory `Master Indexes` into current working directory to save these Rda Master Index. Please note, for all other functions in this package need to locate the same working directory to access these Rda master index files.
 ``` r
-getMasterIndex(2006)
+getMasterIndex(2006, useragent)
 load("Master Indexes\\2006master.Rda")  # Load the generated yearly filing information
 head(year.master)
 #>       cik           company.name form.type date.filed                                  edgar.link quarter
@@ -54,7 +57,7 @@ head(year.master)
 ## Search for filing information
 The `getFilingInfo` function takes firm identifier (name or cik), filing year(s), quarter(s), and form type as input parameters from a user and provides filing information for the firm. The function automatically downloads master index for the input year(s) and the quarter(s) using `getMasterIndex` function if it is not already been downloaded in the current working directory. By default, information of all the form types filed in all the quarters of the input year by the firm will be provided by this function.
 ``` r
-info <- getFilingInfo('United Technologies', c(2005, 2006), quarter = c(1,2), form.type = c('8-K','10-K')) 
+info <- getFilingInfo('United Technologies', c(2005, 2006), quarter = c(1,2), form.type = c('8-K','10-K'), useragent) 
 #> Downloading Master Indexes from SEC server for 2005 ...
 #> Master Index for quarter 1 
 #> Master Index for quarter 2 
@@ -75,7 +78,7 @@ head(info)
 ## Download filings
 The `getFilings` function takes CIKs, form type, filing year, and quarter of the filing as input. It creates new directory `Edgar filings_full text` to store all downloaded filings. All the filings will be stored in the current working directory. Keep the same current working directory for further process.
 ``` r
-output <- getFilings(cik.no = c(1000180, 38079), c('10-K','10-Q'), 2006, quarter = c(1, 2, 3), downl.permit = "n")
+output <- getFilings(cik.no = c(1000180, 38079), c('10-K','10-Q'), 2006, quarter = c(1, 2, 3), downl.permit = "n", useragent)
 #> Total number of filings to be downloaded = 6. Do you want to download (y/n)? y
 #> Downloading fillings. Please wait... 
 #>   |=====================================================================================| 100%
@@ -92,7 +95,7 @@ output
 ## Get HTML view of filings
 The `getFilingsHTML` function takes CIK(s), form type(s), filing year(s), and quarter of the filing as input. The function imports edgar filings downloaded via getFilings function; otherwise, it downloads the filings which are not already been downloaded. It then reads the downloaded filings, scraps filing text excluding exhibits, and saves the filing contents in `Edgar filings_HTML view` directory in HTML format.
 ``` r
-output <- getFilingsHTML(cik.no = c(1000180, 38079), c('10-K','10-Q'), 2006, quarter = c(1, 2, 3))
+output <- getFilingsHTML(cik.no = c(1000180, 38079), c('10-K','10-Q'), 2006, quarter = c(1, 2, 3), useragent)
 #> Downloading fillings. Please wait... 
 #>   |=========================================================================| 100%
 #> Scrapping full EDGAR and converting to HTML...
@@ -112,7 +115,7 @@ head(output)
 ## Extract filing header information
 The `getFilingHeader` function takes CIK(s), form type(s), and year(s) as input parameters. The function first imports available downloaded filings in local woking directory `Edgar filings_full text` created by getFilings function; otherwise, it automatically downloads the filings which are not already been downloaded. It then parses all the important header information from filings. The function returns a dataframe with filing and header information.
 ``` r
-header.df <- getFilingHeader(cik.no = c('1000180', '38079'), form.type = '10-K', filing.year = 2006) 
+header.df <- getFilingHeader(cik.no = c('1000180', '38079'), form.type = '10-K', filing.year = 2006, useragent) 
 #> Downloading fillings. Please wait... 
 #>   |================================================================================================| 100%
 #> Scraping filing header information ...
@@ -139,7 +142,7 @@ header.df
 The `searchFilings` function takes search keyword vector, CIK(s), form type(s), and year(s) as input parameters. The function first imports available downloaded filings in the local woking directory `Edgar filings_full text` created by `getFilings` function; otherwise, it automatically downloads the filings which are not already been downloaded. It then reads the filings and searches for the input keywords. The function returns a dataframe with filing information and the number of keyword hits. Additionally, it saves the search information with surrounding content of search keywords in HTML format in the new directory `Keyword search results`. These HTML view of search results would help the user to analyze the search strategy and identify false positive hits.
 ``` r
 word.list = c('derivative','hedging','currency forwards','currency futures')
-output <- searchFilings(cik.no = c('1000180', '38079'), form.type = c("10-K", "10-K405","10KSB", "10KSB40"), filing.year = c(2005, 2006), word.list) 
+output <- searchFilings(cik.no = c('1000180', '38079'), form.type = c("10-K", "10-K405","10KSB", "10KSB40"), filing.year = c(2005, 2006), word.list, useragent) 
 #> Downloading fillings. Please wait... 
 #>   |======================================================================================| 100%
 #> Searching filings for the input words...
@@ -156,7 +159,7 @@ output
 ## Extract business description section from annual statements
 The `getBusinDescr` function takes firm CIK(s) and filing year(s) as input parameters from a user and provides "Item 1" section extracted from annual statements along with filing information. The function imports annual filings (10-K statements) downloaded via `getFilings` function; otherwise, it automates the downloading process if not already been downloaded. It then reads the downloaded statements, cleans HTML tags, and parse the contents. This function automatically creates a new directory with the name `Business descriptions text` in the current working directory and saves scrapped business description sections in this directory. It considers "10-K", "10-K405", "10KSB", and "10KSB40" form types as annual statements.
 ``` r
-output <- getBusinDescr(cik.no = c(1000180, 38079), filing.year = c(2005, 2006))
+output <- getBusinDescr(cik.no = c(1000180, 38079), filing.year = c(2005, 2006), useragent)
 #> Downloading fillings. Please wait... 
 #>   |======================================================================================| 100%
 #> Extracting 'Item 1' section...
@@ -173,7 +176,7 @@ output
 ## Extract MD&A section from annual statements
 The `getMgmtDisc` function takes firm CIK(s) and filing year(s) as input parameters from a user and provides "Item 7" section extracted from annual statements along with filing information. The function imports annual filings downloaded via `getFilings` function; otherwise, it downloads the filings which are not already been downloaded. It then reads, cleans, and parse the required section from the filings. It creates a new directory with the name `MD&A section text` in the current working directory to save scrapped "Item 7" sections in text format. It considers "10-K", "10-K405", "10KSB", and "10KSB40" form types as annual statements.
 ``` r
-output <- getMgmtDisc(cik.no = c(1000180, 38079), filing.year = 2005)
+output <- getMgmtDisc(cik.no = c(1000180, 38079), filing.year = 2005, useragent)
 #> Downloading fillings. Please wait... 
 #>   |======================================================================================| 100%
 #> Extracting 'Item 7' section...
@@ -188,7 +191,7 @@ output
 ## Retrieve Form 8-K items information
 The `get8KItems` function takes firm CIK(s) and filing year(s) as input parameters from a user and provides information on the Form 8-K triggering events along with the firm filing information. The function searches and imports existing downloaded 8-K filings in the current directory; otherwise it downloads them using `getFilings` function. It then reads the 8-K filings and parses them to extract events information.
 ``` r
-output <- get8KItems(cik.no = 38079, filing.year = 2005)
+output <- get8KItems(cik.no = 38079, filing.year = 2005, useragent)
 #> Downloading fillings. Please wait... 
 #>   |======================================================================================| 100%
 #> Scraping 8-K filings...
@@ -206,7 +209,7 @@ tail(output)
 ## Generate sentiment measures of SEC filings
 The `getSentiment` function takes CIK(s), form type(s), and year(s) as input parameters. The function first imports available downloaded filings in the local working directory `Edgar filings_full text` created by getFilings function; otherwise, it automatically downloads the filings which are not already been downloaded. It then reads, cleans, and computes sentiment measures for these filings. The function returns a dataframe with filing information and sentiment measures.
 ``` r
-senti.df <- getSentiment(cik.no = c('1000180', '38079'), form.type = '10-K', filing.year = 2006) 
+senti.df <- getSentiment(cik.no = c('1000180', '38079'), form.type = '10-K', filing.year = 2006, useragent) 
 #> Downloading fillings. Please wait... 
 #>   |==========================================================================================| 100%
 #> Computing sentiment measures...
