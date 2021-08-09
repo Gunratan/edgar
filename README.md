@@ -23,7 +23,8 @@ The package is maintained on
 Please download only what you need and moderate downlaod requests to minimize server load. A user is required to declare user agent in request headers. The following link explains these requirements in details.
 https://www.sec.gov/os/accessing-edgar-data
 
-Accordingly, `edgar` package requires user to pass user agent in every function. Its houdl be in the form of "Your Name Contact@domain.com"
+Accordingly, `edgar` package requires user to pass user agent in every function. It should be in the form of 
+useragent = "Your Name Contact@domain.com"
 
 ## Download daily filing information
 The `getDailyMaster` function takes date as an input parameter from a user, and downloads master index for the date from the U.S. SEC EDGAR server https://www.sec.gov/Archives/edgar/daily-index/. It strips headers and converts this daily filing information into dataframe format. Function creates new directory 'Daily Indexes' into working directory to save these downloaded daily master index files in Rda format.
