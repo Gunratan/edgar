@@ -1,4 +1,4 @@
-# edgar 2.0.3
+# edgar 2.0.4
 Tool for the U.S. SEC EDGAR Retrieval and Parsing of Corporate Filings
 
 # Overview
@@ -18,6 +18,10 @@ The package is maintained on
 [github](https://github.com/Gunratan/edgar-Rpackage).
 
 # Implementation of the edgar package
+
+## SEC guidelines on downlaoding EDGAR files
+https://www.sec.gov/os/accessing-edgar-data
+
 ## Download daily filing information
 The `getDailyMaster` function takes date as an input parameter from a user, and downloads master index for the date from the U.S. SEC EDGAR server https://www.sec.gov/Archives/edgar/daily-index/. It strips headers and converts this daily filing information into dataframe format. Function creates new directory 'Daily Indexes' into working directory to save these downloaded daily master index files in Rda format.
 
