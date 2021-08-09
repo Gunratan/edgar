@@ -4,7 +4,7 @@
 \alias{getFilings}
 \title{Retrieves EDGAR filings from SEC server}
 \usage{
-getFilings(cik.no, form.type, filing.year, quarter, downl.permit)
+getFilings(cik.no, form.type, filing.year, quarter, downl.permit, useragent)
 }
 \arguments{
 \item{cik.no}{vector of CIK number of firms in integer format. Suppress leading 
@@ -22,6 +22,8 @@ as c(1 ,2, 3, 4).}
 asks a user permission to download fillings. This permission helps the user 
 to decide in case if number of filings are large. Setting downl.permit = "y" 
 will not ask for user permission to download filings.}
+
+\item{useragent}{Should be in the form of "Your Name Contact@domain.com"}
 }
 \value{
 Function downloads EDGAR filings and returns download status in dataframe 
@@ -37,13 +39,14 @@ getFilings function takes CIKs, form type, filing year, and quarter of the
 filing as input. It creates new directory "Edgar filings_full text" to 
 store all downloaded filings. All the filings will be stored in the 
 current working directory. Keep the same current working directory for 
-further process.
+further process. According to SEC EDGAR's guidelines a user also needs to 
+declare user agent.
 }
 \examples{
 \dontrun{
 
 output <- getFilings(cik.no = c(1000180, 38079), c('10-K','10-Q'), 
-                     2006, quarter = c(1, 2, 3), downl.permit = "n")
+                     2006, quarter = c(1, 2, 3), downl.permit = "n", useragent)
                      
 ## download '10-Q' and '10-K' filings filed by the firm with 
 CIK = 1000180 in quarters 1,2, and 3 of the year 2006. These 

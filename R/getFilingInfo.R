@@ -8,9 +8,10 @@
 #' the quarter(s) using \link[edgar]{getMasterIndex} function if it is not already 
 #' been downloaded in the current working directory. By default, information of all 
 #' the form types filed in all the quarters of the input year by the firm will be 
-#' provided by this function.
+#' provided by this function. According to SEC EDGAR's guidelines a user also needs to 
+#' declare user agent.
 #' 
-#' @usage getFilingInfo(firm.identifier, filing.year, quarter, form.type)
+#' @usage getFilingInfo(firm.identifier, filing.year, quarter, form.type, useragent)
 #' 
 #' @param firm.identifier CIK of a firm in integer format or full/partial 
 #' name of a firm in character format. Suppress leading zeroes from CIKs.
@@ -23,25 +24,51 @@
 #' @param form.type vector of form types in character format. By default, it is kept
 #' as all the available form types.
 #' 
+#' @param useragent Should be in the form of "Your Name Contact@domain.com"
+#' 
 #' @return Function returns dataframe with filing information.
 #'   
 #' @examples
 #' \dontrun{
 #' 
 #' info <- getFilingInfo('United Technologies', c(2005, 2006), 
-#'                        quarter = c(1,2), form.type = c('8-K','10-K')) 
+#'                        quarter = c(1,2), form.type = c('8-K','10-K'), useragent) 
 #' ## Returns filing information on '8-K' and '10-K' filed by the firm 
 #' in quarter 1 and 2 of year 2005 and 2006.
 #' 
-#' info <- getFilingInfo(1067701, 2006) 
+#' info <- getFilingInfo(1067701, 2006, useragent) 
 #' ## Returns all the filings information filed by the firm in all 
 #' the quarters of year 2006.
 #'}
 
 getFilingInfo <- function(firm.identifier, filing.year, quarter = c(1, 2, 3, 4),
-                          form.type = "ALL") {
+                          form.type = "ALL", useragent="") {
   
     options(warn = -1)
+  
+  ### Check for valid user agent
+  if(useragent != ""){
+    # Check user agent
+    bb <- any(grepl( "lonare.gunratan@gmail.com|glonare@uncc.edu|bharatspatil@gmail.com",
+                     useragent, ignore.case = T))
+    
+    if(bb == TRUE){
+      
+      cat("Please provide a valid User Agent. 
+      Visit https://www.sec.gov/os/accessing-edgar-data 
+      for more information")
+      return()
+    }
+    
+  }else{
+    
+    cat("Please provide a valid User Agent. 
+      Visit https://www.sec.gov/os/accessing-edgar-data 
+      for more information")
+    return()
+  }
+  
+  
   
     # Check the year validity
     if (!is.numeric(filing.year)) {
@@ -60,12 +87,12 @@ getFilingInfo <- function(firm.identifier, filing.year, quarter = c(1, 2, 3, 4),
       filepath <- paste0("Master Indexes/", yr.master)
       
       if (!file.exists(filepath)) {
-        getMasterIndex(year)  # download master index
+        getMasterIndex(year, useragent)  # download master index
       }
       
       load(filepath)  # Import master Index
       
-      if(form.type == "ALL"){
+      if( (length(form.type) == 1) && (form.type == "ALL")){
         form.type <- unique(year.master$form.type)
       }
       

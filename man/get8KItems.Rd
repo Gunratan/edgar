@@ -4,13 +4,15 @@
 \alias{get8KItems}
 \title{Retrieves Form 8-K event information}
 \usage{
-get8KItems(cik.no, filing.year)
+get8KItems(cik.no, filing.year, useragent)
 }
 \arguments{
 \item{cik.no}{vector of CIK(s) in integer format. Suppress leading 
 zeroes from CIKs.}
 
 \item{filing.year}{vector of four digit numeric year}
+
+\item{useragent}{Should be in the form of "Your Name Contact@domain.com"}
 }
 \value{
 Function returns dataframe with Form 8-K events information along with CIK
@@ -26,15 +28,16 @@ a user and provides information on the Form 8-K triggering events along with the
 filing information. The function searches and imports existing downloaded 
 8-K filings in the current directory; otherwise it downloads them using 
 \link[edgar]{getFilings} function. It then reads the 8-K filings and parses them 
-to extract events information.
+to extract events information. According to SEC EDGAR's guidelines a user also needs to 
+declare user agent.
 }
 \examples{
 \dontrun{
 
-output <- get8KItems(cik.no = 38079, filing.year = 2005)
+output <- get8KItems(cik.no = 38079, filing.year = 2005, useragent)
 ## Returns 8-K event information for CIK '38079' filed in year 2005.
 
 output <- get8KItems(cik.no = c(1000180,38079), 
-                     filing.year = c(2005, 2006)) 
+                     filing.year = c(2005, 2006), useragent) 
 }
 }

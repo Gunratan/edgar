@@ -4,7 +4,7 @@
 \alias{getFilingsHTML}
 \title{Get HTML view of EDGAR filings}
 \usage{
-getFilingsHTML(cik.no, form.type, filing.year, quarter)
+getFilingsHTML(cik.no, form.type, filing.year, quarter, useragent)
 }
 \arguments{
 \item{cik.no}{vector of CIK number of firms in integer format. Suppress leading 
@@ -17,6 +17,8 @@ form.type = 'ALL' if need to download all forms.}
 
 \item{quarter}{vector of one digit quarter integer number. By deault, it is kept
 as c(1 ,2, 3, 4).}
+
+\item{useragent}{Should be in the form of "Your Name Contact@domain.com"}
 }
 \value{
 Function saves EDGAR filings in HTML format and returns filing information 
@@ -33,13 +35,14 @@ via \link[edgar]{getFilings} function; otherwise, it downloads the filings which
 not already been downloaded. It then reads the downloaded filings, scraps filing text
 excluding exhibits, and saves the filing contents in 'Edgar filings_HTML view' 
 directory in HTML format. The new directory 'Edgar filings_HTML view' will be 
-automatically created by this function.
+automatically created by this function. According to SEC EDGAR's guidelines a 
+user also needs to declare user agent.
 }
 \examples{
 \dontrun{
 
 output <- getFilingsHTML(cik.no = c(1000180, 38079), c('10-K','10-Q'), 
-                         2006, quarter = c(1, 2, 3))
+                         2006, quarter = c(1, 2, 3), useragent)
 
 ## download '10-Q' and '10-K' filings filed by the firm with 
 CIK = 1000180 in quarters 1,2, and 3 of the year 2006. These filings 

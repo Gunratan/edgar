@@ -4,19 +4,22 @@
 \alias{getBusinDescr}
 \title{Retrieves business descriptions from annual statements}
 \usage{
-getBusinDescr(cik.no, filing.year)
+getBusinDescr(cik.no, filing.year, useragent)
 }
 \arguments{
 \item{cik.no}{vector of firm CIK(s) in integer format. Suppress leading 
 zeroes from a CIK number. cik.no = 'ALL' conisders all the CIKs.}
 
 \item{filing.year}{vector of four digit numeric year}
+
+\item{useragent}{Should be in the form of "Your Name Contact@domain.com"}
 }
 \value{
 Function saves scrapped business description section from annual 
 filings in "Business descriptions text" directory created in the current 
 working directory. The output dataframe contains filing information and 
-parsing status.
+parsing status. For a successful extraction of this section, 
+'extract.status' column returns 1, other return 0 for failed extraction.
 }
 \description{
 \code{getBusinessDescr} retrieves business description section from annual statements 
@@ -31,18 +34,19 @@ if not already been downloaded. It then reads the downloaded statements, cleans 
 and parse the contents. This function automatically creates a new directory with 
 the name "Business descriptions text" in the current working directory and 
 saves scrapped business description sections in this directory. It considers "10-K", 
-"10-K405", "10KSB", and "10KSB40" form types as annual statements.
+"10-K405", "10KSB", and "10KSB40" form types as annual statements. According to 
+SEC EDGAR's guidelines a user also needs to declare user agent.
 }
 \examples{
 \dontrun{
 
-output <- getBusinDescr(cik.no = c(1000180, 38079), filing.year = 2005)
+output <- getBusinDescr(cik.no = c(1000180, 38079), filing.year = 2005, useragent)
 ## saves scrapped "Item 1" section from 10-K filings for CIKs in 
 "Business descriptions text" directory present 
 in the working directory. Also, it provides filing information in 
 the output datframe.
 
 output <- getBusinDescr(cik.no = c(1000180, 38079), 
-                        filing.year = c(2005, 2006))
+                        filing.year = c(2005, 2006), useragent)
 }
 }

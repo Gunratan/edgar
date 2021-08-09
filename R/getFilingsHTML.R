@@ -9,9 +9,10 @@
 #' not already been downloaded. It then reads the downloaded filings, scraps filing text
 #' excluding exhibits, and saves the filing contents in 'Edgar filings_HTML view' 
 #' directory in HTML format. The new directory 'Edgar filings_HTML view' will be 
-#' automatically created by this function.
+#' automatically created by this function. According to SEC EDGAR's guidelines a 
+#' user also needs to declare user agent. 
 #' 
-#' @usage getFilingsHTML(cik.no, form.type, filing.year, quarter)
+#' @usage getFilingsHTML(cik.no, form.type, filing.year, quarter, useragent)
 #'
 #' @param cik.no vector of CIK number of firms in integer format. Suppress leading 
 #' zeroes from CIKs. Keep cik.no = 'ALL' if needs to download for all CIKs.
@@ -24,7 +25,8 @@
 #' @param quarter vector of one digit quarter integer number. By deault, it is kept
 #' as c(1 ,2, 3, 4).
 #' 
-#'     
+#' @param useragent Should be in the form of "Your Name Contact@domain.com"
+#'         
 #' @return Function saves EDGAR filings in HTML format and returns filing information 
 #' in dataframe format.
 #'   
@@ -32,7 +34,7 @@
 #' \dontrun{
 #' 
 #' output <- getFilingsHTML(cik.no = c(1000180, 38079), c('10-K','10-Q'), 
-#'                          2006, quarter = c(1, 2, 3))
+#'                          2006, quarter = c(1, 2, 3), useragent)
 #' 
 #' ## download '10-Q' and '10-K' filings filed by the firm with 
 #' CIK = 1000180 in quarters 1,2, and 3 of the year 2006. These filings 
@@ -40,7 +42,8 @@
 #' 
 #' }
 
-getFilingsHTML <- function(cik.no = "ALL", form.type = "ALL", filing.year, quarter = c(1, 2, 3, 4)) {
+getFilingsHTML <- function(cik.no = "ALL", form.type = "ALL", filing.year, 
+                           quarter = c(1, 2, 3, 4), useragent="") {
   
   # Check the year validity
   if (!is.numeric(filing.year)) {
@@ -48,8 +51,31 @@ getFilingsHTML <- function(cik.no = "ALL", form.type = "ALL", filing.year, quart
     return()
   }
   
+  ### Check for valid user agent
+  if(useragent != ""){
+    # Check user agent
+    bb <- any(grepl( "lonare.gunratan@gmail.com|glonare@uncc.edu|bharatspatil@gmail.com",
+                     useragent, ignore.case = T))
+    
+    if(bb == TRUE){
+      
+      cat("Please provide a valid User Agent. 
+      Visit https://www.sec.gov/os/accessing-edgar-data 
+      for more information")
+      return()
+    }
+    
+  }else{
+    
+    cat("Please provide a valid User Agent. 
+      Visit https://www.sec.gov/os/accessing-edgar-data 
+      for more information")
+    return()
+  }
+  
+  ### Download filings
   output <- getFilings(cik.no = cik.no, form.type , filing.year, 
-                       quarter = c(1, 2, 3, 4), downl.permit = "y")
+                       quarter = c(1, 2, 3, 4), downl.permit = "y", useragent)
   
   if (is.null(output)){
     #cat("No annual statements found for given CIK(s) and year(s).")

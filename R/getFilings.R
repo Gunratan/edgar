@@ -7,9 +7,10 @@
 #' filing as input. It creates new directory "Edgar filings_full text" to 
 #' store all downloaded filings. All the filings will be stored in the 
 #' current working directory. Keep the same current working directory for 
-#' further process. 
+#' further process. According to SEC EDGAR's guidelines a user also needs to 
+#' declare user agent.  
 #' 
-#' @usage getFilings(cik.no, form.type, filing.year, quarter, downl.permit)
+#' @usage getFilings(cik.no, form.type, filing.year, quarter, downl.permit, useragent)
 #'
 #' @param cik.no vector of CIK number of firms in integer format. Suppress leading 
 #' zeroes from CIKs. Keep cik.no = 'ALL' if needs to download for all CIKs.
@@ -27,7 +28,8 @@
 #' to decide in case if number of filings are large. Setting downl.permit = "y" 
 #' will not ask for user permission to download filings. 
 #' 
-#'    
+#' @param useragent Should be in the form of "Your Name Contact@domain.com"
+#' 
 #' @return Function downloads EDGAR filings and returns download status in dataframe 
 #' format with CIK, company name, form type, date filed, accession number, and 
 #' download status.
@@ -36,7 +38,7 @@
 #' \dontrun{
 #' 
 #' output <- getFilings(cik.no = c(1000180, 38079), c('10-K','10-Q'), 
-#'                      2006, quarter = c(1, 2, 3), downl.permit = "n")
+#'                      2006, quarter = c(1, 2, 3), downl.permit = "n", useragent)
 #'                      
 #' ## download '10-Q' and '10-K' filings filed by the firm with 
 #' CIK = 1000180 in quarters 1,2, and 3 of the year 2006. These 
@@ -45,7 +47,7 @@
 #' }
 
 getFilings <- function(cik.no = "ALL", form.type = "ALL", filing.year, quarter = c(1, 2, 3, 4),
-                       downl.permit = "n") {
+                       downl.permit = "n", useragent= "") {
   
   options(warn = -1)  # remove warnings
   
@@ -83,13 +85,36 @@ getFilings <- function(cik.no = "ALL", form.type = "ALL", filing.year, quarter =
     return(dmethod)
   }
   
-  
+  ### Check for valid user agent
+  if(useragent != ""){
+    # Check user agent
+    bb <- any(grepl( "lonare.gunratan@gmail.com|glonare@uncc.edu|bharatspatil@gmail.com",
+                     useragent, ignore.case = T))
+    
+    if(bb == TRUE){
+      
+      cat("Please provide a valid User Agent. 
+      Visit https://www.sec.gov/os/accessing-edgar-data 
+      for more information")
+      return()
+    }
+    
+  }else{
+    
+    cat("Please provide a valid User Agent. 
+      Visit https://www.sec.gov/os/accessing-edgar-data 
+      for more information")
+    return()
+  }
   
   # function to download file and return FALSE if download error
-  DownloadSECFile <- function(link, dfile, dmethod) {
+  DownloadSECFile <- function(link, dfile, dmethod, useragent) {
     
     tryCatch({
-      utils::download.file(link, dfile, method = dmethod, quiet = TRUE)
+      utils::download.file(link, dfile, method = dmethod, quiet = TRUE,
+                           headers = c("User-Agent" = useragent,
+                                       "Accept-Encoding"= "deflate, gzip",
+                                       "Host"= "www.sec.gov"))
       return(TRUE)
     }, error = function(e) {
       return(FALSE)
@@ -110,16 +135,16 @@ getFilings <- function(cik.no = "ALL", form.type = "ALL", filing.year, quarter =
     filepath <- paste0("Master Indexes/", yr.master)
     
     if (!file.exists(filepath)) {
-      getMasterIndex(year)  # download master index
+      getMasterIndex(year, useragent)  # download master index
     }
     
     load(filepath)  # Import master Index
     
-    if(form.type == "ALL"){
+    if((length(form.type) == 1) && (form.type == "ALL")){
       form.type <- unique(year.master$form.type)
     }
     
-    if( cik.no == "ALL" ){
+    if( (length(cik.no) == 1) && (cik.no == "ALL" )){
       year.master <- year.master[which(year.master$form.type %in% form.type 
                                        & year.master$quarter %in% quarter), ]
     } else {
@@ -194,24 +219,52 @@ getFilings <- function(cik.no = "ALL", form.type = "ALL", filing.year, quarter =
                               "_", index.df$accession.number[i], ".txt")
       
       if (file.exists(dest.filename)) {
-        res <- TRUE
-      } else {
-        res <- DownloadSECFile(edgar.link, dest.filename, dmethod)
-      }
-      
-      ## Try downloding one more time if Download error
-      if (res == FALSE) {
-        Sys.sleep(5) ## wait for 5 seconds and then try downloading again
-        res <- DownloadSECFile(edgar.link, dest.filename, dmethod)
-      }
-      
-      ## Fill up the status 
-      if (res) {
+        
         index.df$status[i] <- "Download success"
         
       } else {
-        index.df$status[i] <- "Download Error"
+        
+        ### Go inside a loop to download
+        k = 1
+        
+        while(TRUE){
+          
+          res <- DownloadSECFile(edgar.link, dest.filename, dmethod, useragent)
+          
+          if (res){
+            
+            if (file.info(dest.filename)$size < 6000){
+              
+              aa <- readLines(dest.filename)
+              
+              if(any(grepl("For security purposes, and to ensure that the public service remains available to users, this government computer system", aa)) == FALSE){
+                
+                index.df$status[i] <- "Download success"
+                
+                break
+              }
+              
+            }else{
+              
+              index.df$status[i] <- "Download success"
+              
+              break
+            }
+          }
+          
+          ### If waiting for more than 10*15 seconds, put as server error
+          if(k == 16){
+            index.df$status[i] <- "Download Error"
+            break
+          }
+          
+          k = k + 1
+          Sys.sleep(10) ## Wait for multiple of 10 seconds to ease request load on SEC server. 
+        }
+        
       }
+      
+
       
       # Update progress bar
       setTxtProgressBar(progress.bar, i)

@@ -4,7 +4,7 @@
 \alias{searchFilings}
 \title{Search EDGAR filings for specific keywords}
 \usage{
-searchFilings(cik.no, form.type, filing.year, word.list)
+searchFilings(cik.no, form.type, filing.year, word.list, useragent)
 }
 \arguments{
 \item{cik.no}{vector of CIK number of firms in integer format. Suppress leading 
@@ -16,6 +16,8 @@ form.type = 'ALL' if need to download all forms.}
 \item{filing.year}{vector of four digit numeric year}
 
 \item{word.list}{vector of words to search in the filing}
+
+\item{useragent}{Should be in the form of "Your Name Contact@domain.com"}
 }
 \value{
 Function returns dataframe containing filing information and the 
@@ -37,7 +39,8 @@ The function returns a dataframe with filing information and the number of
 keyword hits. Additionally, it saves the search information with surrounding 
 content of search keywords in HTML format in the new directory 
 "Keyword search results". These HTML view of search results would help the user 
-to analyze the search strategy and identify false positive hits.
+to analyze the search strategy and identify false positive hits. According 
+to SEC EDGAR's guidelines a user also needs to declare user agent.
 }
 \examples{
 \dontrun{
@@ -45,6 +48,6 @@ to analyze the search strategy and identify false positive hits.
 word.list = c('derivative','hedging','currency forwards','currency futures')
 output <- searchFilings(cik.no = c('1000180', '38079'), 
                      form.type = c("10-K", "10-K405","10KSB", "10KSB40"), 
-                     filing.year = c(2005, 2006), word.list) 
+                     filing.year = c(2005, 2006), word.list, useragent) 
 }
 }

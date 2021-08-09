@@ -7,9 +7,10 @@
 #' 'Edgar filings_full text' created by \link[edgar]{getFilings} function; 
 #' otherwise, it automatically downloads the filings which are not already been 
 #' downloaded. It then parses all the important header information from filings.
-#' The function returns a dataframe with filing and header information.
+#' The function returns a dataframe with filing and header information. According 
+#' to SEC EDGAR's guidelines a user also needs to declare user agent.
 #' 
-#' @usage getFilingHeader(cik.no, form.type, filing.year)
+#' @usage getFilingHeader(cik.no, form.type, filing.year, useragent)
 #' 
 #' @param cik.no vector of CIK(s) in integer format. Suppress leading 
 #' zeroes from CIKs. cik.no = 'ALL' conisders all the CIKs.
@@ -18,6 +19,8 @@
 #' form.type = 'ALL' if need to download all forms.  
 #'
 #' @param filing.year vector of four digit numeric year
+#' 
+#' @param useragent Should be in the form of "Your Name Contact@domain.com"
 #' 
 #' @return Function returns dataframe containing CIK number, company name, 
 #' date of filing, accession number, confirmed period of report, fiscal year end,
@@ -31,16 +34,39 @@
 #' \dontrun{
 #' 
 #' header.df <- getFilingHeader(cik.no = c('1000180', '38079'), 
-#'                          form.type = '10-K', filing.year = 2006) 
+#'                          form.type = '10-K', filing.year = 2006, useragent) 
 #'               
 #' header.df <- getFilingHeader(cik.no = '38079', c('10-K', '10-Q'), 
-#'                          filing.year = c(2005, 2006))
+#'                          filing.year = c(2005, 2006), useragent)
 #'}
 
-getFilingHeader <- function(cik.no, form.type, filing.year) {
+getFilingHeader <- function(cik.no, form.type, filing.year, useragent="") {
+    
+    
+    ### Check for valid user agent
+    if(useragent != ""){
+        # Check user agent
+        bb <- any(grepl( "lonare.gunratan@gmail.com|glonare@uncc.edu|bharatspatil@gmail.com",
+                         useragent, ignore.case = T))
+        
+        if(bb == TRUE){
+            
+            cat("Please provide a valid User Agent. 
+      Visit https://www.sec.gov/os/accessing-edgar-data 
+      for more information")
+            return()
+        }
+        
+    }else{
+        
+        cat("Please provide a valid User Agent. 
+      Visit https://www.sec.gov/os/accessing-edgar-data 
+      for more information")
+        return()
+    }
     
     output <- getFilings(cik.no, form.type, filing.year, 
-                         quarter = c(1, 2, 3, 4), downl.permit = "y")
+                         quarter = c(1, 2, 3, 4), downl.permit = "y", useragent)
     
     if (is.null(output)) {
         # cat('Please check the CIK number.')

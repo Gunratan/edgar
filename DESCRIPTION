@@ -1,12 +1,12 @@
 Package: edgar
 Type: Package
 Title: Tool for the U.S. SEC EDGAR Retrieval and Parsing of Corporate Filings
-Version: 2.0.3
-Date: 2020-05-20
+Version: 2.0.4
+Date: 2021-08-07
 Author: Gunratan Lonare <lonare.gunratan@gmail.com>, Bharat Patil
     <bharatspatil@gmail.com>
 Maintainer: Gunratan Lonare <lonare.gunratan@gmail.com>
-Depends: R (>= 3.1)
+Depends: R (>= 3.5.0)
 Imports: R.utils, tm, XML, stringr, stringi, qdapRegex
 Description: In the USA, companies file different forms with the U.S. 
     Securities and Exchange Commission (SEC) through EDGAR (Electronic 
@@ -22,4 +22,4 @@ Description: In the USA, companies file different forms with the U.S.
     keywords, provides sentiment measures, parses filing header 
     information, and provides HTML view of SEC filings.  
 License: GPL-2
-RoxygenNote: 7.1.0
+RoxygenNote: 7.1.1
