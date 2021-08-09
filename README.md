@@ -15,7 +15,7 @@ library("edgar")
 ```
 
 The package is maintained on
-[github](https://github.com/Gunratan/edgar-Rpackage).
+[github](https://github.com/Gunratan/edgar).
 
 # Implementation of the edgar package
 
