@@ -20,7 +20,7 @@ The package is maintained on
 # Implementation of the edgar package
 
 ## SEC guidelines on downloading EDGAR files
-Please download only what you need and moderate downlaod requests to minimize EDGAR server load. A user is required to declare user agent in request headers. The following link explains these requirements in details.
+Please download only what you need and moderate download requests to minimize EDGAR server load. A user is required to declare user agent in request headers. The following link explains these requirements in details.
 https://www.sec.gov/os/accessing-edgar-data
 
 Accordingly, `edgar` package requires user to pass user agent in every function. It should be in the form of 
