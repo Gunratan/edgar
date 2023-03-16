@@ -109,14 +109,16 @@ getFilingsHTML <- function(cik.no = "ALL", form.type = "ALL", filing.year,
       filing.text <- filing.text ## In case opening and closing TEXT TAG not found, cosnider full web page
     })
 
-    
-    if(!grepl(pattern ='<xml>|<type>xml|<html>', filing.text, ignore.case=T)){
-      
-      filing.text <- gsub("\t"," ", filing.text)
-      filing.text <- gsub("<CAPTION>|<S>|<C>", "", filing.text, ignore.case = T)
-      ## Append with PRE to keep the text format as it is
-      filing.text <- c("<PRE style='font-size: 15px'>", filing.text, "</PRE>") 
+    #Define problematic text function
+    remove_problematic_text <- function(t) {
+    t <- gsub("\t"," ", t)
+    t <- gsub("<CAPTION>|<S>|<C>", "", t, ignore.case = T)
+    ## Append with PRE to keep the text format as it is
+    t <- c("<PRE style='font-size: 15px'>", t, "</PRE>")
     }
+    
+    ifelse(!grepl(pattern ='<xml>|<type>xml|<html>', filing.text, ignore.case=T),
+         remove_problematic_text(filing.text), filing.text)
 
     ## Form new dir and filename
     new.dir <- paste0("Edgar filings_HTML view/Form ", f.type)
