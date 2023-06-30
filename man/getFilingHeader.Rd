@@ -4,46 +4,74 @@
 \alias{getFilingHeader}
 \title{Scrape EDGAR filing header information}
 \usage{
-getFilingHeader(cik.no, form.type, filing.year, useragent)
+getFilingHeader(cik.no, form.type, filing.year, useragent,
+marker = c("state or other jur", "state of inco", "incorporated under",
+"state or jurisdiction", "state or other", "incorporated in",
+"\\\\(state of", "organized under the laws of", "incorporation",
+"jurisdiction"), nmax = 500, ...)
 }
 \arguments{
-\item{cik.no}{vector of CIK(s) in integer format. Suppress leading 
+\item{cik.no}{vector of CIK(s) in integer format. Suppress leading
 zeroes from CIKs. cik.no = 'ALL' conisders all the CIKs.}
 
-\item{form.type}{character vector containing form type to be downloaded. 
+\item{form.type}{character vector containing form type to be downloaded.
 form.type = 'ALL' if need to download all forms.}
 
 \item{filing.year}{vector of four digit numeric year}
 
 \item{useragent}{Should be in the form of "Your Name Contact@domain.com"}
+
+\item{marker}{a character string of text markers to use when looking for the
+state of incorporation in free text of the report. Defaults to the following:
+c("state or other jur", "state of inco", "incorporated under",
+"state or jurisdiction", "state or other", "incorporated in", "\\(state of",
+"organized under the laws of", "incorporation", "jurisdiction"). The function
+also looks for text such as "a New York Corporation" to infer the state of
+incorporation (New York, in this case).}
+
+\item{nmax}{the number of lines in the report to use when looking for the
+state of incorporation in free text of the report. Defaults to 500}
+
+\item{...}{for passing arguments between functions}
 }
 \value{
-Function returns dataframe containing CIK number, company name, 
+Function returns dataframe containing CIK number, company name,
 date of filing, accession number, confirmed period of report, fiscal year end,
-Standard Industrial Classification (SIC) code, Internal Revenue Code (IRS) 
-code, state of incorporation, business address, and mailing address. If a 
-filing contains multiple filers then output will contain header information on 
+Standard Industrial Classification (SIC) code, Internal Revenue Code (IRS)
+code, state of incorporation, business address, and mailing address. If a
+filing contains multiple filers then output will contain header information on
 all the filers in multiple rows.
 }
 \description{
 \code{getFilingHeader} Extract EDGAR filing header information
 }
 \details{
-getFilingHeader function takes CIK(s), form type(s), and year(s) as input parameters.  
-The function first imports available downloaded filings in local woking directory 
-'Edgar filings_full text' created by \link[edgar]{getFilings} function; 
-otherwise, it automatically downloads the filings which are not already been 
+getFilingHeader function takes CIK(s), form type(s), and year(s) as input parameters.
+The function first imports available downloaded filings in local woking directory
+'Edgar filings_full text' created by \link[edgar:getFilings]{getFilings} function;
+otherwise, it automatically downloads the filings which are not already been
 downloaded. It then parses all the important header information from filings.
-The function returns a dataframe with filing and header information. According 
+The function returns a dataframe with filing and header information. According
 to SEC EDGAR's guidelines a user also needs to declare user agent.
+The function uses the \link[future.apply:future_lapply]{future_lapply} 
+function to extract information in parallel. Please set \link[future:plan]{plan} 
+according to your needs before running the function. The progress bar
+can be controlled with the \link[progressr]{progressr} package. See in particular 
+\link[progressr:handlers]{handlers}
 }
 \examples{
 \dontrun{
+library(future.apply)
+plan(multisession, workers = availableCores()-1)
 
-header.df <- getFilingHeader(cik.no = c('1000180', '38079'), 
-                         form.type = '10-K', filing.year = 2006, useragent) 
-              
-header.df <- getFilingHeader(cik.no = '38079', c('10-K', '10-Q'), 
+# if a progress update is desired
+library(progressr)
+handlers(global = TRUE)
+
+header.df <- getFilingHeader(cik.no = c('1000180', '38079'),
+                         form.type = '10-K', filing.year = 2006, useragent)
+
+header.df <- getFilingHeader(cik.no = '38079', c('10-K', '10-Q'),
                          filing.year = c(2005, 2006), useragent)
 }
 }

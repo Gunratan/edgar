@@ -22,7 +22,7 @@
 #' 
 #' @param filing.year vector of four digit numeric year
 #' 
-#' @param quarter vector of one digit quarter integer number. By deault, it is kept
+#' @param quarter vector of one digit quarter integer number. By default, it is kept
 #' as c(1 ,2, 3, 4).
 #' 
 #' @param useragent Should be in the form of "Your Name Contact@domain.com"
@@ -41,6 +41,11 @@
 #' will be stored in the current working directory.
 #' 
 #' }
+#' @export
+#' @import utils
+#' @importFrom progressr progressor handlers
+#' @importFrom future.apply future_lapply
+
 
 getFilingsHTML <- function(cik.no = "ALL", form.type = "ALL", filing.year, 
                            quarter = c(1, 2, 3, 4), useragent="") {
@@ -84,18 +89,21 @@ getFilingsHTML <- function(cik.no = "ALL", form.type = "ALL", filing.year,
   
   cat("Scrapping full EDGAR and converting to HTML...\n")
   
-  progress.bar <- txtProgressBar(min = 0, max = nrow(output), style = 3)
+  p <- progressr::progressor(along = 1:nrow(output))
   
   dir.create("Edgar filings_HTML view")
   
-  for (i in 1:nrow(output)) {
+  results <- future.apply::future_lapply(
+    X = 1:nrow(output),
+    FUN = function(i) {
+      
     f.type <- gsub("/", "", output$form.type[i])
     year <- output$filing.year[i]
     cik <- output$cik[i]
     date.filed <- output$date.filed[i]
     accession.number <- output$accession.number[i]
     
-    dest.filename <- paste0("Edgar filings_full text/Form ", f.type, 
+    dest.filename <- paste0(getwd(),"/", "Edgar filings_full text/Form ", f.type, 
                             "/", cik, "/", cik, "_", f.type, "_", 
                             date.filed, "_", accession.number, ".txt")
     # Read filing
@@ -106,11 +114,11 @@ getFilingsHTML <- function(cik.no = "ALL", form.type = "ALL", filing.year,
       filing.text <- filing.text[(grep("<TEXT>", filing.text, ignore.case = TRUE)[1]):(grep("</TEXT>", 
                                                                                                 filing.text, ignore.case = TRUE)[1])]
     }, error = function(e) {
-      filing.text <- filing.text ## In case opening and closing TEXT TAG not found, cosnider full web page
+      filing.text <- filing.text ## In case opening and closing TEXT TAG not found, consider full web page
     })
 
     
-    if(!grepl(pattern ='<xml>|<type>xml|<html>', filing.text, ignore.case=T)){
+    if(any(!grepl(pattern ='<xml>|<type>xml|<html>', filing.text, ignore.case=T))){
       
       filing.text <- gsub("\t"," ", filing.text)
       filing.text <- gsub("<CAPTION>|<S>|<C>", "", filing.text, ignore.case = T)
@@ -124,23 +132,19 @@ getFilingsHTML <- function(cik.no = "ALL", form.type = "ALL", filing.year,
     new.dir2 <- paste0(new.dir, "/", cik)
     dir.create(new.dir2)
     
-    dest.filename2 <- paste0(new.dir2, "/", cik, "_", f.type, 
+    dest.filename2 <- paste0(getwd(), "/", new.dir2, "/", cik, "_", f.type, 
                             "_", output$date.filed[i], 
                             "_", output$accession.number[i], ".html")
     
     ## Writing filing text to html file
     writeLines(filing.text, dest.filename2)
     
-    # update progress bar
-    setTxtProgressBar(progress.bar, i)
-  }
+    if (i %% 10 == 0) {p()}
+    })
   
   ## convert dates into R dates
   output$date.filed <- as.Date(as.character(output$date.filed), "%Y-%m-%d")
 
-  # Close progress bar
-  close(progress.bar)
-  
   output$quarter <- NULL
   output$filing.year <- NULL
   names(output)[names(output) == 'status'] <- 'downld.status'

@@ -42,6 +42,8 @@
 #' output <- getBusinDescr(cik.no = c(1000180, 38079), 
 #'                         filing.year = c(2005, 2006), useragent)
 #'}
+#' @export
+#' @import utils XML
 
 getBusinDescr <- function(cik.no, filing.year, useragent="") {
   

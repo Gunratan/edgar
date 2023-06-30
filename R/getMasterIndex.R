@@ -36,6 +36,9 @@
 #' ## Downloads quarterly master index files for 2006 and 2008, and 
 #' stores into 2006master.Rda and 2008master.Rda files.
 #'}
+#' @export
+#' @importFrom R.utils gunzip
+#' @importFrom utils download.file
 
 getMasterIndex <- function(filing.year, useragent= "") {
 
@@ -47,26 +50,6 @@ getMasterIndex <- function(filing.year, useragent= "") {
         return()
     }
     
-  # Check the download compatibility based on OS
-  getdownCompat <- function() {
-    
-    if (nzchar(Sys.which("libcurl"))) {
-      dmethod <- "libcurl"
-    } else if (nzchar(Sys.which("wget"))) {
-      dmethod <- "wget"
-    } else if (nzchar(Sys.which("curl"))) {
-      dmethod <- "curl"
-    } else if (nzchar(Sys.which("lynx"))) {
-      dmethod <- "lynx"
-    } else if (nzchar(Sys.which("wininet"))) {
-      dmethod <- "wininet"
-    } else {
-      dmethod <- "auto"
-    }
-    
-    return(dmethod)
-  }
-  
   ### Check for valid user agent
   if(useragent != ""){
     # Check user agent
@@ -89,25 +72,22 @@ getMasterIndex <- function(filing.year, useragent= "") {
     return()
   }
   
-  
   # function to download file and return FALSE if download error
-  DownloadSECFile <- function(link, dfile, dmethod, useragent) {
-    
+  DownloadSECFile <- function(link, dfile, useragent, extra = NULL) {
     tryCatch({
-      utils::download.file(link, dfile, method = dmethod, quiet = TRUE,
-                           headers = c("User-Agent" = useragent,
-                                       "Accept-Encoding"= "deflate, gzip",
-                                       "Host"= "www.sec.gov"))
-      return(TRUE)
+      r <- httr::GET(link, httr::add_headers(Connection = "keep-alive", 
+                                             `User-Agent` = useragent), httr::write_disk(dfile, overwrite = TRUE))
+      if (httr::status_code(r) == 200) {
+        return(TRUE)
+      }
+      else {
+        return(FALSE)
+      }
     }, error = function(e) {
       return(FALSE)
     })
-    
   }
   
-    ## Check the download compatibility based on OS
-    dmethod <- getdownCompat() 
-    
     dir.create("Master Indexes")
     
     status.array <- data.frame()
@@ -141,7 +121,7 @@ getMasterIndex <- function(filing.year, useragent= "") {
             
             while(TRUE){
 
-              res <- DownloadSECFile(link, dfile, dmethod, useragent)
+              res <- DownloadSECFile(link, dfile, useragent)
             
               if (res){
                 
@@ -177,12 +157,13 @@ getMasterIndex <- function(filing.year, useragent= "") {
             R.utils::gunzip(dfile, destname = file, temporary = FALSE, skip = FALSE, overwrite = TRUE, remove = FALSE)
             
             # Removing ''' so that scan with '|' not fail due to occurrence of ''' in company name
-            raw.data <- gsub("'", "", readLines(file))
-            
+            # Convert to UTF-8 as different encodings may throw errors with gsub
+            raw.data <- gsub("'", "", iconv(readLines(file), "latin1", "UTF-8"))
+
             # Find line number where header description ends
             header.end <- grep("--------------------------------------------------------", raw.data)
             
-            # writting back to storage
+            # writing back to storage
             writeLines(raw.data, file)
             
             scraped.data <- scan(file, what = list("", "", "", "", ""), flush = F, skip = header.end, sep = "|",
