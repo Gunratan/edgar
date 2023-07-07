@@ -161,6 +161,11 @@ getFilingHeaderForm13 <-
         line <- grep("<HTML>|<html\\s", filing.text, ignore.case = T)
         line_end <- grep("</HTML>", filing.text, ignore.case = T)
         
+        if(length(line_end) == 0){
+          line <- grep("<text>|<text\\s", filing.text, ignore.case = T)
+          line_end <- grep("</text>", filing.text, ignore.case = T)
+        }
+        
         filing.html <- filing.text[line:line_end]
         
         filing.html <-
@@ -310,7 +315,8 @@ getFilingHeaderForm13 <-
       combined.df[!combined.df$mail.state %in% tolower(states$state_abb), "mail.state"] <-
         NA_character_
       
-      if (i %% 10 == 0) {p()}
+      #if (i %% 10 == 0) {p(message = print(combined.df$cik[i]))}
+      p(message = print(dest.filename))
       return(combined.df)
   
     })
@@ -506,9 +512,10 @@ GetFilingCusip <- function(filing.text) {
       cusip.no <- stringr::str_remove(cusip.no, "^US")
     }
     cusip.no <- gsub("[^[:alnum:]]", "", cusip.no)
+    cusip.no <- gsub("^[A-Za-z\\s]+$", "", cusip.no)
     cusip.no <-
       gsub(
-        "\\b(?!\\d+\\b)[[:alnum:]]{1,5}\\b|\\b[[:alnum:]]{11,}\\b",
+        "\\b[[:alnum:]]{1,5}\\b|\\b[[:alnum:]]{11,}\\b",
         "",
         cusip.no,
         perl = TRUE
@@ -561,7 +568,7 @@ GetFilingCusip <- function(filing.text) {
           "\\b13G\\b|\\b13D\\b|\\bNo\\b|\\bCUSIP\\b|\\bNone\\b$"
         )
       cusip.no <- gsub("[^[:alnum:]]", "", cusip.no)
-      cusip.no <- gsub("^[A-Za-z\\s]+", "", cusip.no)
+      cusip.no <- gsub("^[A-Za-z\\s]+$", "", cusip.no)
       
       # some include the country code in the CUSIP
       if (!any(is.na(cusip.no)) && any(nchar(cusip.no) > 10)) {
@@ -571,7 +578,7 @@ GetFilingCusip <- function(filing.text) {
       # apply cleaning to make sure that an CUSIP number has been extracted
       cusip.no <-
         gsub(
-          "\\b(?!\\d+\\b)[[:alnum:]]{1,5}\\b|\\b[[:alnum:]]{11,}\\b",
+          "\\b[[:alnum:]]{1,5}\\b|\\b[[:alnum:]]{11,}\\b",
           "",
           cusip.no,
           perl = TRUE
@@ -594,13 +601,14 @@ GetFilingCusip <- function(filing.text) {
           "\\b13G\\b|\\b13D\\b|\\bNo\\b|\\bCUSIP\\b|\\bNone\\b"
         )
       cusip.no <- gsub("[^[:alnum:]]", "", cusip.no)
-      cusip.no <- gsub("^[A-Za-z\\s]+", "", cusip.no)
+      cusip.no <- gsub("^[A-Za-z\\s]+$", "", cusip.no)
+      
       if (!any(is.na(cusip.no)) && any(nchar(cusip.no) > 10)) {
         cusip.no <- stringr::str_remove(cusip.no, "^US")
       }
       cusip.no <-
         gsub(
-          "\\b(?!\\d+\\b)[[:alnum:]]{1,5}\\b|\\b[[:alnum:]]{11,}\\b",
+          "\\b[[:alnum:]]{1,5}\\b|\\b[[:alnum:]]{11,}\\b",
           "",
           cusip.no,
           perl = TRUE
@@ -625,14 +633,14 @@ GetFilingCusip <- function(filing.text) {
         cusip.no <- gsub("[^[:alnum:]]", "", cusip.no)
         cusip.no <-
           gsub(
-            "\\b(?!\\d+\\b)[[:alnum:]]{1,5}\\b|\\b[[:alnum:]]{11,}\\b",
+            "\\b[[:alnum:]]{1,5}\\b|\\b[[:alnum:]]{11,}\\b",
             "",
             cusip.no,
             perl = TRUE
           )
         cusip.no <- cusip.no[!is.na(cusip.no)]
         cusip.no <- cusip.no[!cusip.no == ""]
-        if (length(cusip.no) == 0 ||
+        if (length(cusip.no) == 0 || is.na(cusip.no) ||
             cusip.no == "" ||
             cusip.no == "NA" || nchar(cusip.no) > 10) {
           cusip.no <- NA_character_
@@ -641,8 +649,9 @@ GetFilingCusip <- function(filing.text) {
     }
     
     cusip.no <- gsub("[^[:alnum:]]", "", cusip.no)
+    cusip.no <- gsub("^[A-Za-z\\s]+$", "", cusip.no)
     
-    if (length(cusip.no) == 0 ||
+    if (length(cusip.no) == 0 || is.na(cusip.no) ||
         cusip.no == "" ||
         cusip.no == "NA" || nchar(cusip.no) > 10) {
       cusip.no <- NA_character_
@@ -658,16 +667,18 @@ GetFilingCusip <- function(filing.text) {
       stringr::str_match(cusip.text,
                          "(^\\s*\\(e\\)|^\\s*e[:.]+)\\s*(\\b[[:alnum:]\\s]{6,10}\\b)")[3]
     cusip.no <- gsub("[^[:alnum:]]", "", cusip.no)
+    cusip.no <- gsub("^[A-Za-z\\s]+$", "", cusip.no)
+    
     cusip.no <-
       gsub(
-        "\\b(?!\\d+\\b)[[:alnum:]]{1,5}\\b|\\b[[:alnum:]]{11,}\\b",
+        "\\b[[:alnum:]]{1,5}\\b|\\b[[:alnum:]]{11,}\\b",
         "",
         cusip.no,
         perl = TRUE
       )
     cusip.no <- cusip.no[!is.na(cusip.no)]
     cusip.no <- cusip.no[!cusip.no == ""]
-    if (length(cusip.no) == 0 ||
+    if (length(cusip.no) == 0 || is.na(cusip.no) ||
         cusip.no == "" ||
         cusip.no == "NA" || nchar(cusip.no) > 10) {
       cusip.no <- NA_character_

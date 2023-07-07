@@ -148,6 +148,11 @@ getFilingHeaderForm13_old <-
         line <- grep("<HTML>|<html\\s", filing.text, ignore.case = T)
         line_end <- grep("</HTML>", filing.text, ignore.case = T)
         
+        if(length(line_end) == 0){
+          line <- grep("<text>|<text\\s", filing.text, ignore.case = T)
+          line_end <- grep("</text>", filing.text, ignore.case = T)
+        }
+        
         filing.html <- filing.text[line:line_end]
         
         filing.html <-
