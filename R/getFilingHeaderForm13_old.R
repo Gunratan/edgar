@@ -111,6 +111,7 @@ getFilingHeaderForm13_old <-
     output$filing.year <- NULL
     output$status <- NULL
     output$subject.cusip <- NA
+    output$event.period <- NA
     
     ## Start scraping filing one by one and storing header information in main dataframe
     main.output <- data.frame()
@@ -183,7 +184,7 @@ getFilingHeaderForm13_old <-
             filing.html[-empty.lnumbers]  ## Remove all lines only with space
         }
         
-        period.of.report <- GetFilingEventDate(filing.html)
+        event.period <- GetFilingEventDate(filing.html)
         
         cusip.no <- GetFilingCusip(filing.html)
       } else {
@@ -197,12 +198,13 @@ getFilingHeaderForm13_old <-
           filing.text <-
             filing.text[-empty.lnumbers]  ## Remove all lines only with space
         }
-        period.of.report <- GetFilingEventDate(filing.text)
+        event.period <- GetFilingEventDate(filing.text)
         
         cusip.no <- GetFilingCusip(filing.text)
       }
       
       main.df$subject.cusip <- cusip.no
+      main.df$event.period <- event.period
       
       secheader_line <-
         grep("</SEC-HEADER>", filing.text, ignore.case = T)
@@ -210,28 +212,30 @@ getFilingHeaderForm13_old <-
       if (length(secheader_line) != 0) {
         secheader_line = secheader_line[1]
       }
-      #
-      #      if (length(secheader_line) == 0) {
-      #        secheader_line <-
-      #          grep("</IMS-HEADER>", filing.text, ignore.case = T)
-      #
-      #        if (length(secheader_line) != 0) {
-      #          secheader_line <- secheader_line[1]
-      #        }
-      #      }
-      #
-      #      if (length(secheader_line) == 0) {
-      #        secheader_line <- grep("<DOCUMENT>", filing.text, ignore.case = T)
-      #
-      #        if (length(secheader_line) != 0) {
-      #          secheader_line <- secheader_line[1]
-      #        } else {
-      #          secheader_line <- 0
-      #        }
-      #      }
+
+      if (length(secheader_line) == 0) {
+        secheader_line <-
+          grep("</IMS-HEADER>", filing.text, ignore.case = T)
+
+        if (length(secheader_line) != 0) {
+          secheader_line <- secheader_line[1]
+        }
+      }
+
+      if (length(secheader_line) == 0) {
+        secheader_line <- grep("<DOCUMENT>", filing.text, ignore.case = T)
+
+        if (length(secheader_line) != 0) {
+          secheader_line <- secheader_line[1]
+        } else {
+          secheader_line <- 0
+        }
+      }
       
       if (length(secheader_line) != 0 & secheader_line > 8) {
         filing.text1 <- filing.text[1:(secheader_line - 1)]
+        
+        period.of.report <- GetConfirmedPeriodOfReport(filing.text1)
         
         filing.text1 <-
           filing.text1[grep("SUBJECT COMPANY|FILED BY", filing.text1,
@@ -241,13 +245,9 @@ getFilingHeaderForm13_old <-
         filing.text1 <- paste(filing.text1, collapse = "**00**")
         filing.text1 <- paste(filing.text1, "**00**")
         filing.text1 <- tolower(filing.text1)
-        if (startsWith(filing.text1, "subject company")) {
-          filing.text2 <- stringr::str_split(filing.text1, "(?=filed by)")
-        } else {
-          filing.text2 <-
-            stringr::str_split(filing.text1, "(?=subject company)")
-        }
+        filing.text2 <- stringr::str_split(filing.text1, "(?=subject company)|(?=filed by)")
         filing.text2 <- unlist(filing.text2)
+        filing.text2 <- filing.text2[nzchar(filing.text2)]
         
         for (filer.no in 1:length(filing.text2)) {
           text <- filing.text2[filer.no]
@@ -338,6 +338,8 @@ getFilingHeaderForm13_old <-
       as.Date(as.character(main.output$date.filed), "%Y-%m-%d")
     main.output$period.of.report <-
       anytime::anydate(as.character(main.output$period.of.report))
+    main.output$event.period <-
+      anytime::anydate(as.character(main.output$event.period))
     main.output$filer.cik <- as.numeric(main.output$filer.cik)
     
     # Close progress bar

@@ -49,7 +49,7 @@ The CUSIP number is for the subject (i.e. the same company for which the CIK was
 To distinguish between subject and filer look at the filer.type column.
 The subject.cusips are extracted as they are presented in the
 filing. Some post-processing may be necessary. For instance, cusips for the same company sometimes have
-varying lengths. When the period.of.report is NA it can often be set to the last day of the year.
+varying lengths. When the event.period is NA it can often be set to the last day of the year.
 }
 \examples{
 \dontrun{

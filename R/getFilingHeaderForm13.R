@@ -42,7 +42,7 @@
 #' To distinguish between subject and filer look at the filer.type column.
 #' The subject.cusips are extracted as they are presented in the
 #' filing. Some post-processing may be necessary. For instance, cusips for the same company sometimes have
-#' varying lengths. When the period.of.report is NA it can often be set to the last day of the year.
+#' varying lengths. When the event.period is NA it can often be set to the last day of the year.
 #'
 #'
 #' @examples
@@ -123,6 +123,7 @@ getFilingHeaderForm13 <-
     output$filing.year <- NULL
     output$status <- NULL
     output$subject.cusip <- NA
+    output$event.period <- NA
     
     p <- progressr::progressor(along = 1:nrow(output))
 
@@ -196,7 +197,7 @@ getFilingHeaderForm13 <-
             filing.html[-empty.lnumbers]  ## Remove all lines only with space
         }
         
-        period.of.report <- GetFilingEventDate(filing.html)
+        event.period <- GetFilingEventDate(filing.html)
         
         cusip.no <- GetFilingCusip(filing.html)
       } else {
@@ -210,12 +211,13 @@ getFilingHeaderForm13 <-
           filing.text <-
             filing.text[-empty.lnumbers]  ## Remove all lines only with space
         }
-        period.of.report <- GetFilingEventDate(filing.text)
+        event.period <- GetFilingEventDate(filing.text)
         
         cusip.no <- GetFilingCusip(filing.text)
       }
       
       main.df$subject.cusip <- cusip.no
+      main.df$event.period <- event.period
       
       secheader_line <-
         grep("</SEC-HEADER>", filing.text, ignore.case = T)
@@ -246,6 +248,8 @@ getFilingHeaderForm13 <-
       if (length(secheader_line) != 0 & secheader_line > 8) {
         filing.text1 <- filing.text[1:(secheader_line - 1)]
         
+        period.of.report <- GetConfirmedPeriodOfReport(filing.text1)
+        
         filing.text1 <-
           filing.text1[grep("SUBJECT COMPANY|FILED BY", filing.text1,
                             ignore.case = T)[1]:length(filing.text1)]
@@ -254,13 +258,9 @@ getFilingHeaderForm13 <-
         filing.text1 <- paste(filing.text1, collapse = "**00**")
         filing.text1 <- paste(filing.text1, "**00**")
         filing.text1 <- tolower(filing.text1)
-        if (startsWith(filing.text1, "subject company")) {
-          filing.text2 <- stringr::str_split(filing.text1, "(?=filed by)")
-        } else {
-          filing.text2 <-
-            stringr::str_split(filing.text1, "(?=subject company)")
-        }
+        filing.text2 <- stringr::str_split(filing.text1, "(?=subject company)|(?=filed by)")
         filing.text2 <- unlist(filing.text2)
+        filing.text2 <- filing.text2[nzchar(filing.text2)]
         
         for (filer.no in 1:length(filing.text2)) {
           text <- filing.text2[filer.no]
@@ -352,6 +352,8 @@ getFilingHeaderForm13 <-
       as.Date(as.character(main.output$date.filed), "%Y-%m-%d")
     main.output$period.of.report <-
       anytime::anydate(as.character(main.output$period.of.report))
+    main.output$event.period <-
+      anytime::anydate(as.character(main.output$event.period))
     
     # clean cik and irs
     main.output$filer.cik <- as.numeric(main.output$filer.cik)
@@ -368,7 +370,7 @@ getFilingHeaderForm13 <-
 #' @export
 
 GetFilingEventDate <- function(filing.text) {
-  period.of.report <- NA
+  event.period <- NA
   
   # Remove extra white space, the whitespace is good for cusip extraction but not for date extraction
   filing.text <- stringr::str_squish(filing.text)
@@ -381,24 +383,24 @@ GetFilingEventDate <- function(filing.text) {
       ignore.case = T
     )
   )) {
-    period.of.report <-
+    event.period <-
       filing.text[grep("Date of Event Which Requires Filing of this Statement",
                        filing.text,
                        ignore.case = T)]
     
-    period.of.report <-
+    event.period <-
       stringr::str_squish(
         gsub(
           "Date of Event Which Requires Filing of this Statement:",
           "",
-          period.of.report,
+          event.period,
           ignore.case = T
         )
       )
   }
   
   # if this fails check the next one
-  if (is.na(period.of.report) &&
+  if (is.na(event.period) &&
       any(grepl("\\(Date of Event|Date of Event", filing.text, ignore.case = T))) {
     line <-
       grep("\\(Date of Event|Date of Event", filing.text, ignore.case = T)
@@ -411,36 +413,36 @@ GetFilingEventDate <- function(filing.text) {
       date.text <- filing.text[line]
       date.text <- gsub("-", "", date.text)
       date.text <- stringr::str_squish(date.text)
-      period.of.report <-
+      event.period <-
         stringr::str_match(
           date.text,
           ".*?(\\b(\\d{1,2}/\\d{1,2}/\\d{4}|\\d{4}-\\d{2}-\\d{2}|\\d{2}/\\d{2}/\\d{2}|[A-Za-z]+ \\d{1,2}, \\d{4})\\b).*?\\(Date of Event.*"
         )[3]
       
     } else {
-      period.of.report <- filing.text[line - 1]
-      if (grepl("-------|________", period.of.report, ignore.case = T)) {
-        period.of.report <- filing.text[line - 2]
+      event.period <- filing.text[line - 1]
+      if (grepl("-------|________", event.period, ignore.case = T)) {
+        event.period <- filing.text[line - 2]
       }
     }
     
-    period.of.report <- stringr::str_squish(period.of.report)
+    event.period <- stringr::str_squish(event.period)
   }
   
   # come cleaning of the extracted text
-  period.of.report <- gsub("\\[|\\]", "", period.of.report)
-  period.of.report <- stringr::str_squish(period.of.report)
+  event.period <- gsub("\\[|\\]", "", event.period)
+  event.period <- stringr::str_squish(event.period)
   
   # check if the extract text has a date format
-  if (!is.na(period.of.report)) {
-    period.of.report <-
-      ifelse(is.na(anytime::anydate(period.of.report)),
-             as.character(as.Date(period.of.report, format = "%m/%d/%y")),
-             period.of.report)
+  if (!is.na(event.period)) {
+    event.period <-
+      ifelse(is.na(anytime::anydate(event.period)),
+             as.character(as.Date(event.period, format = "%m/%d/%y")),
+             event.period)
   }
   
   # The above will not extract correctly if the date is below the identifier
-  if (is.na(period.of.report) &&
+  if (is.na(event.period) &&
       any(grepl("\\(Date of Event|Date of Event", filing.text, ignore.case = T))) {
     line <-
       grep("\\(Date of Event|Date of Event", filing.text, ignore.case = T)
@@ -449,32 +451,32 @@ GetFilingEventDate <- function(filing.text) {
       line <- line[1]
     }
     
-    period.of.report <- filing.text[line + 1]
-    if (nchar(period.of.report) > 20) {
-      period.of.report <- gsub("-", "", period.of.report)
-      period.of.report <- stringr::str_squish(period.of.report)
-      period.of.report <-
+    event.period <- filing.text[line + 1]
+    if (nchar(event.period) > 20) {
+      event.period <- gsub("-", "", event.period)
+      event.period <- stringr::str_squish(event.period)
+      event.period <-
         stringr::str_match(
-          period.of.report,
+          event.period,
           ".*?(\\b(\\d{1,2}/\\d{1,2}/\\d{4}|\\d{4}-\\d{2}-\\d{2}|\\d{2}/\\d{2}/\\d{2}|[A-Za-z]+ \\d{1,2}, \\d{4})\\b).*?\\(Date of Event.*"
         )[3]
     }
     
-    if (!is.na(period.of.report)) {
-      period.of.report <-
-        ifelse(is.na(anytime::anydate(period.of.report)),
-               as.character(as.Date(period.of.report, format = "%m/%d/%y")),
-               period.of.report)
+    if (!is.na(event.period)) {
+      event.period <-
+        ifelse(is.na(anytime::anydate(event.period)),
+               as.character(as.Date(event.period, format = "%m/%d/%y")),
+               event.period)
     }
-    period.of.report <- gsub("\\[|\\]", "", period.of.report)
-    period.of.report <- stringr::str_squish(period.of.report)
+    event.period <- gsub("\\[|\\]", "", event.period)
+    event.period <- stringr::str_squish(event.period)
   }
   
-  if (length(period.of.report) == 0 | is.na(period.of.report)) {
-    period.of.report <- NA
+  if (length(event.period) == 0 | is.na(event.period)) {
+    event.period <- NA
   }
   
-  return(period.of.report)
+  return(event.period)
 }
 
 #' Scrape the CUSIP from the filing text
