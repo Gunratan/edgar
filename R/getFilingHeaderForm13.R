@@ -152,9 +152,9 @@ getFilingHeaderForm13 <-
       # Read filing
       filing.text <- readLines(dest.filename)
       
-      main.df <- output[i, ]
+      p(message = print(dest.filename))
       
-      #print(output$cik[i])
+      main.df <- output[i, ]
       
       #Get event date and cusip
       if (any(grepl(pattern = '<htm>|<html>|<html\\s', filing.text, ignore.case =
@@ -201,6 +201,10 @@ getFilingHeaderForm13 <-
         
         cusip.no <- GetFilingCusip(filing.html)
       } else {
+        
+        filing.text <-
+          iconv(filing.text, "latin1", "ASCII", sub = " ")
+        
         filing.text <- gsub("\\t|\\n|\\s", " ", filing.text)
         #filing.text <- gsub("\\s{2,}", " ", filing.text)
         #filing.text <- gsub("^\\s{1,}", "", filing.text)
@@ -251,14 +255,14 @@ getFilingHeaderForm13 <-
         period.of.report <- GetConfirmedPeriodOfReport(filing.text1)
         
         filing.text1 <-
-          filing.text1[grep("SUBJECT COMPANY|FILED BY", filing.text1,
+          filing.text1[grep("SUBJECT COMPANY|FILED BY|FILER", filing.text1,
                             ignore.case = T)[1]:length(filing.text1)]
         
         
         filing.text1 <- paste(filing.text1, collapse = "**00**")
         filing.text1 <- paste(filing.text1, "**00**")
         filing.text1 <- tolower(filing.text1)
-        filing.text2 <- stringr::str_split(filing.text1, "(?=subject company)|(?=filed by)")
+        filing.text2 <- stringr::str_split(filing.text1, "(?=subject company)|(?=filed by)|(?=filer)")
         filing.text2 <- unlist(filing.text2)
         filing.text2 <- filing.text2[nzchar(filing.text2)]
         
@@ -285,13 +289,15 @@ getFilingHeaderForm13 <-
       } else {
         period.of.report <- ""
         text <- ""
+        filer.no <- NA
         header.df <-
           FilingHeaderSubFunc(text, filer.no, period.of.report)
+        header.df$filer.type <- ""
         combined.df <- cbind(main.df, header.df)
         
       }
       
-      combined.df[!combined.df$filer.type == "subject", "subject.cusip"] <-
+      combined.df[combined.df$filer.type == "filer", "subject.cusip"] <-
         NA_character_
       
       # check if all extracted states are valid state abbreviations
@@ -315,8 +321,6 @@ getFilingHeaderForm13 <-
       combined.df[!combined.df$mail.state %in% tolower(states$state_abb), "mail.state"] <-
         NA_character_
       
-      #if (i %% 10 == 0) {p(message = print(combined.df$cik[i]))}
-      p(message = print(dest.filename))
       return(combined.df)
   
     })
@@ -345,8 +349,10 @@ getFilingHeaderForm13 <-
     main.output$sic <- gsub("'|/|,", "", main.output$sic)
     main.output$sic <-
       gsub(".*\\[(\\d{4})\\].*", "\\1", main.output$sic)
+    main.output$sic <-
+      gsub("\\[\\]", NA_character_, main.output$sic)
     main.output$sic[main.output$sic == "0000"] <- NA_character_
-    
+
     ## convert dates into R dates
     main.output$date.filed <-
       as.Date(as.character(main.output$date.filed), "%Y-%m-%d")
@@ -399,6 +405,10 @@ GetFilingEventDate <- function(filing.text) {
       )
   }
   
+  if (length(event.period) > 1) {
+    event.period <- event.period[1]
+  }
+  
   # if this fails check the next one
   if (is.na(event.period) &&
       any(grepl("\\(Date of Event|Date of Event", filing.text, ignore.case = T))) {
@@ -416,7 +426,7 @@ GetFilingEventDate <- function(filing.text) {
       event.period <-
         stringr::str_match(
           date.text,
-          ".*?(\\b(\\d{1,2}/\\d{1,2}/\\d{4}|\\d{4}-\\d{2}-\\d{2}|\\d{2}/\\d{2}/\\d{2}|[A-Za-z]+ \\d{1,2}, \\d{4})\\b).*?\\(Date of Event.*"
+          ".*?(\\b(\\d{1,2}/\\d{1,2}/\\d{4}|\\d{4}-\\d{2}-\\d{2}|\\d{2}/\\d{2}/\\d{2}|[A-Za-z]+ \\d{1,2}, \\d{4})\\b).*?\\(Date (o|O)f (E|e)vent.*"
         )[3]
       
     } else {
@@ -458,7 +468,7 @@ GetFilingEventDate <- function(filing.text) {
       event.period <-
         stringr::str_match(
           event.period,
-          ".*?(\\b(\\d{1,2}/\\d{1,2}/\\d{4}|\\d{4}-\\d{2}-\\d{2}|\\d{2}/\\d{2}/\\d{2}|[A-Za-z]+ \\d{1,2}, \\d{4})\\b).*?\\(Date of Event.*"
+          ".*?(\\b(\\d{1,2}/\\d{1,2}/\\d{4}|\\d{4}-\\d{2}-\\d{2}|\\d{2}/\\d{2}/\\d{2}|[A-Za-z]+ \\d{1,2}, \\d{4})\\b).*?\\(Date (o|O)f (E|e)vent.*"
         )[3]
     }
     

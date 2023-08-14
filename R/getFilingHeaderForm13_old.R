@@ -141,7 +141,7 @@ getFilingHeaderForm13_old <-
       
       main.df <- output[i, ]
       
-      print(output$cik[i])
+      print(dest.filename)
       
       #Get event date and cusip
       if (any(grepl(pattern = '<htm>|<html>|<html\\s', filing.text, ignore.case =
@@ -272,8 +272,10 @@ getFilingHeaderForm13_old <-
       } else {
         period.of.report <- ""
         text <- ""
+        filer.no <- NA
         header.df <-
           FilingHeaderSubFunc(text, filer.no, period.of.report)
+        header.df$filer.type <- ""
         combined.df <- cbind(main.df, header.df)
         
       }
@@ -331,6 +333,8 @@ getFilingHeaderForm13_old <-
     main.output$sic <- gsub("'|/|,", "", main.output$sic)
     main.output$sic <-
       gsub(".*\\[(\\d{4})\\].*", "\\1", main.output$sic)
+    main.output$sic <-
+      gsub("\\[\\]", NA_character_, main.output$sic)
     main.output$sic[main.output$sic == "0000"] <- NA_character_
     
     ## convert dates into R dates
