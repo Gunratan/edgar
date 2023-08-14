@@ -426,7 +426,7 @@ GetFilingEventDate <- function(filing.text) {
       event.period <-
         stringr::str_match(
           date.text,
-          ".*?(\\b(\\d{1,2}/\\d{1,2}/\\d{4}|\\d{4}-\\d{2}-\\d{2}|\\d{2}/\\d{2}/\\d{2}|[A-Za-z]+ \\d{1,2}, \\d{4})\\b).*?\\(Date (o|O)f (E|e)vent.*"
+          ".*?(\\b(\\d{1,2}/\\d{1,2}/\\d{4}|\\d{4}-\\d{2}-\\d{2}|\\d{2}/\\d{2}/\\d{2}|[A-Za-z\\.]+ \\d{1,2}, \\d{4})\\b).*?\\(Date (o|O)f (E|e)vent.*"
         )[3]
       
     } else {
@@ -468,7 +468,7 @@ GetFilingEventDate <- function(filing.text) {
       event.period <-
         stringr::str_match(
           event.period,
-          ".*?(\\b(\\d{1,2}/\\d{1,2}/\\d{4}|\\d{4}-\\d{2}-\\d{2}|\\d{2}/\\d{2}/\\d{2}|[A-Za-z]+ \\d{1,2}, \\d{4})\\b).*?\\(Date (o|O)f (E|e)vent.*"
+          ".*?(\\b(\\d{1,2}/\\d{1,2}/\\d{4}|\\d{4}-\\d{2}-\\d{2}|\\d{2}/\\d{2}/\\d{2}|[A-Za-z\\.]+ \\d{1,2}, \\d{4})\\b).*?\\(Date (o|O)f (E|e)vent.*"
         )[3]
     }
     
