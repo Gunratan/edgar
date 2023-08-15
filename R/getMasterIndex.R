@@ -73,7 +73,7 @@ getMasterIndex <- function(filing.year, useragent= "") {
   }
   
   # function to download file and return FALSE if download error
-  DownloadSECFile <- function(link, dfile, useragent, extra = NULL) {
+  DownloadSECFile <- function(link, dfile, useragent) {
     tryCatch({
       r <- httr::GET(link, httr::add_headers(Connection = "keep-alive", 
                                              `User-Agent` = useragent), httr::write_disk(dfile, overwrite = TRUE))
