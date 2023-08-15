@@ -1,4 +1,4 @@
-# edgar 2.0.4
+# edgar 2.0.7
 Tool for the U.S. SEC EDGAR Retrieval and Parsing of Corporate Filings
 
 # Overview
