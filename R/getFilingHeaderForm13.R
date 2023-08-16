@@ -421,7 +421,7 @@ GetFilingEventDate <- function(filing.text) {
     
     if (line < 5) {
       date.text <- filing.text[line]
-      date.text <- gsub("-", "", date.text)
+      date.text <- gsub("-|_", "", date.text)
       date.text <- stringr::str_squish(date.text)
       event.period <-
         stringr::str_match(
@@ -463,7 +463,7 @@ GetFilingEventDate <- function(filing.text) {
     
     event.period <- filing.text[line + 1]
     if (nchar(event.period) > 20) {
-      event.period <- gsub("-", "", event.period)
+      event.period <- gsub("-|_", "", event.period)
       event.period <- stringr::str_squish(event.period)
       event.period <-
         stringr::str_match(
