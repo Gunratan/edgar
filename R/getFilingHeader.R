@@ -517,6 +517,10 @@ FilingHeaderSubFunc <-
                                                        "(business address).*?$")[[1]]
     }
     
+    if (!is.na(business.addr) & nchar(business.addr) < 25) {
+      qdapRegex::rm_between(text, "business address",
+                            "mail address:\\t", extract = TRUE)[[1]]
+    }
     
     ## Street 1
     business.street1 <- qdapRegex::rm_between(business.addr,
@@ -571,7 +575,7 @@ FilingHeaderSubFunc <-
     
     ######## MAIL ADDRESS: #########
     mail.addr <- stringi::stri_extract_all_regex(text,
-                                                 "(mail address).*?$")[[1]]
+                                                 "(mail address:\\t).*?$")[[1]]
     
     mail.addr <- paste0(mail.addr, "**00**")
     

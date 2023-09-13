@@ -364,6 +364,7 @@ getFilingHeaderForm13 <-
     # clean cik and irs
     main.output$filer.cik <- as.numeric(main.output$filer.cik)
     main.output$irs[main.output$irs == "000000000"] <- NA_character_
+    main.output$subject.cusip[main.output$subject.cusip == "000000000"] <- NA_character_
     
     return(main.output)
   }
@@ -411,9 +412,9 @@ GetFilingEventDate <- function(filing.text) {
   
   # if this fails check the next one
   if (is.na(event.period) &&
-      any(grepl("\\(Date of Event|Date of Event", filing.text, ignore.case = T))) {
+      any(grepl("Date of Event", filing.text, ignore.case = T))) {
     line <-
-      grep("\\(Date of Event|Date of Event", filing.text, ignore.case = T)
+      grep("Date of Event", filing.text, ignore.case = T)
     
     if (length(line) > 1) {
       line <- line[1]
@@ -426,7 +427,7 @@ GetFilingEventDate <- function(filing.text) {
       event.period <-
         stringr::str_match(
           date.text,
-          ".*?(\\b(\\d{1,2}/\\d{1,2}/\\d{4}|\\d{4}-\\d{2}-\\d{2}|\\d{2}/\\d{2}/\\d{2}|[A-Za-z\\.]+ \\d{1,2}, \\d{4})\\b).*?\\((?i)Date of Event.*"
+          ".*?(\\b(\\d{1,2}/\\d{1,2}/\\d{4}|\\d{4}-\\d{2}-\\d{2}|\\d{2}/\\d{2}/\\d{2}|[A-Za-z\\.]+ \\d{1,2}, \\d{4}|\\d{1,2} [A-Za-z\\.]+ \\d{4})\\b).*?(?i)Date of Event.*"
         )[3]
       
     } else {
@@ -453,22 +454,34 @@ GetFilingEventDate <- function(filing.text) {
   
   # The above will not extract correctly if the date is below the identifier
   if (is.na(event.period) &&
-      any(grepl("\\(Date of Event|Date of Event", filing.text, ignore.case = T))) {
+      any(grepl("Date of Event", filing.text, ignore.case = T))) {
     line <-
-      grep("\\(Date of Event|Date of Event", filing.text, ignore.case = T)
+      grep("Date of Event", filing.text, ignore.case = T)
     
     if (length(line) > 1) {
       line <- line[1]
     }
     
     event.period <- filing.text[line + 1]
-    if (nchar(event.period) > 20) {
+    if (!is.na(event.period) && nchar(event.period) > 20) {
       event.period <- gsub("-|_", "", event.period)
       event.period <- stringr::str_squish(event.period)
       event.period <-
         stringr::str_match(
           event.period,
-          ".*?(\\b(\\d{1,2}/\\d{1,2}/\\d{4}|\\d{4}-\\d{2}-\\d{2}|\\d{2}/\\d{2}/\\d{2}|[A-Za-z\\.]+ \\d{1,2}, \\d{4})\\b).*?\\((?i)Date of Event.*"
+          ".*?(\\b(\\d{1,2}/\\d{1,2}/\\d{4}|\\d{4}-\\d{2}-\\d{2}|\\d{2}/\\d{2}/\\d{2}|[A-Za-z\\.]+ \\d{1,2}, \\d{4}|\\d{1,2} [A-Za-z\\.]+ \\d{4})\\b).*?(?i)Date of Event.*"
+        )[3]
+    }
+    
+    # The above will not extract correctly if the date is below the identifier on the same line
+    event.period <- filing.text[line]
+    if (!is.na(event.period) && nchar(event.period) > 20) {
+      event.period <- gsub("-|_", "", event.period)
+      event.period <- stringr::str_squish(event.period)
+      event.period <-
+        stringr::str_match(
+          event.period,
+          "(?i)Date of Event Which Requires Filing of this Statement(\\)|) (\\b(\\d{1,2}/\\d{1,2}/\\d{4}|\\d{4}-\\d{2}-\\d{2}|\\d{2}/\\d{2}/\\d{2}|[A-Za-z\\.]+ \\d{1,2}, \\d{4}|\\d{1,2} [A-Za-z\\.]+ \\d{4})\\b).*"
         )[3]
     }
     
@@ -534,6 +547,7 @@ GetFilingCusip <- function(filing.text) {
       )
     cusip.no <- cusip.no[!is.na(cusip.no)]
     cusip.no <- cusip.no[!cusip.no == ""]
+    cusip.no <- cusip.no[!cusip.no == "000000000"]
     # take the most frequent value
     cusip.no <- names(table(cusip.no))[which.max(table(cusip.no))]
     if (!is.null(cusip.no) && cusip.no == "") {
@@ -597,6 +611,7 @@ GetFilingCusip <- function(filing.text) {
         )
       cusip.no <- cusip.no[!is.na(cusip.no)]
       cusip.no <- cusip.no[!cusip.no == ""]
+      cusip.no <- cusip.no[!cusip.no == "000000000"]
       
       if (length(cusip.no) == 0 ||
           is.na(cusip.no) || cusip.no == "NA") {
@@ -627,6 +642,7 @@ GetFilingCusip <- function(filing.text) {
         )
       cusip.no <- cusip.no[!is.na(cusip.no)]
       cusip.no <- cusip.no[!cusip.no == ""]
+      cusip.no <- cusip.no[!cusip.no == "000000000"]
       
       if (length(cusip.no) == 0 & line == 1) {
         cusip.text <-
@@ -652,6 +668,7 @@ GetFilingCusip <- function(filing.text) {
           )
         cusip.no <- cusip.no[!is.na(cusip.no)]
         cusip.no <- cusip.no[!cusip.no == ""]
+        cusip.no <- cusip.no[!cusip.no == "000000000"]
         if (length(cusip.no) == 0 || is.na(cusip.no) ||
             cusip.no == "" ||
             cusip.no == "NA" || nchar(cusip.no) > 10) {
@@ -690,6 +707,7 @@ GetFilingCusip <- function(filing.text) {
       )
     cusip.no <- cusip.no[!is.na(cusip.no)]
     cusip.no <- cusip.no[!cusip.no == ""]
+    cusip.no <- cusip.no[!cusip.no == "000000000"]
     if (length(cusip.no) == 0 || is.na(cusip.no) ||
         cusip.no == "" ||
         cusip.no == "NA" || nchar(cusip.no) > 10) {
