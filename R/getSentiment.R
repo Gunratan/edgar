@@ -77,6 +77,12 @@
 #' 
 #' @examples
 #' \dontrun{
+#' library(future.apply)
+#' plan(multisession, workers = availableCores()-1)
+#' 
+#' # if a progress update is desired
+#' library(progressr)
+#' handlers(global = TRUE)
 #' 
 #' senti.df <- getSentiment(cik.no = c('1000180', '38079'), 
 #'                          form.type = '10-K', filing.year = 2006, useragent) 
@@ -87,6 +93,10 @@
 #' senti.df <- getSentiment(cik.no = '38079', form.type = c('10-K', '10-Q'), 
 #'                          filing.year = c(2005, 2006), useragent)
 #'}
+#' @export
+#' @importFrom XML htmlParse xpathSApply xmlValue
+#' @importFrom progressr progressor handlers
+#' @importFrom future.apply future_lapply
 
 getSentiment <- function(cik.no, form.type, filing.year, useragent= "") {
     
@@ -127,7 +137,7 @@ getSentiment <- function(cik.no, form.type, filing.year, useragent= "") {
     # load Loughran & McDonald Master Dictionary and import word lists
     LoadLMDictionary <- function() {
       
-      load(system.file("data/LMMasterDictionary.rda", package = "edgar"))
+      data("LMMasterDictionary")
       
       uncertainty <- ifelse(LMMasterDictionary$uncertainty != 0, LMMasterDictionary$word, NA)
       uncertainty <- uncertainty[!is.na(uncertainty)]
@@ -166,7 +176,7 @@ getSentiment <- function(cik.no, form.type, filing.year, useragent= "") {
     ## Load LM dictionaries
     lm.dict <- LoadLMDictionary()
 
-    progress.bar <- txtProgressBar(min = 0, max = nrow(output), style = 3)
+    p <- progressr::progressor(along = 1:nrow(output))
     
     output$file.size <- NA
     output$word.count <- NA
@@ -184,13 +194,26 @@ getSentiment <- function(cik.no, form.type, filing.year, useragent= "") {
     output$lm.litigious.count <- NA
     output$hv.negative.count <- NA
     
-    for (i in 1:nrow(output)) {
+    results <- future.apply::future_lapply(
+      X = 1:nrow(output),
+      FUN = function(i) {
         
-        f.type <- gsub("/", "", output$form.type[i])
-
-        dest.filename <- paste0("Edgar filings_full text/Form ", f.type, 
-                                "/", output$cik[i], "/", output$cik[i], "_", f.type, "_", 
-                                output$date.filed[i], "_", output$accession.number[i], ".txt")
+        dest.filename <-
+          paste0(getwd(),"/",
+                 "Edgar filings_full text/Form ",
+                 gsub("/", "", output$form.type[i]),
+                 "/",
+                 output$cik[i],
+                 "/",
+                 output$cik[i],
+                 "_",
+                 gsub("/", "", output$form.type[i]),
+                 "_",
+                 output$date.filed[i],
+                 "_",
+                 output$accession.number[i],
+                 ".txt"
+          )
         
         # Read filing
         filing.text <- readLines(dest.filename)
@@ -202,21 +225,18 @@ getSentiment <- function(cik.no, form.type, filing.year, useragent= "") {
           filing.text <- filing.text[(grep("<DOCUMENT>", filing.text, ignore.case = TRUE)[1]):(grep("</DOCUMENT>", 
                                                                                                     filing.text, ignore.case = TRUE)[1])]
         }, error = function(e) {
-          filing.text <- filing.text ## In case opening and closing DOCUMENT TAG not found, cosnider full web page
+          filing.text <- filing.text ## In case opening and closing DOCUMENT TAG not found, consider full web page
         })
         
         # See if 10-K is in XLBR or old text format
         if (any(grepl(pattern = "<xml>|<type>xml|<html>|10k.htm", filing.text, ignore.case = T))) {
             
-            doc <- XML::htmlParse(filing.text, asText = TRUE, useInternalNodes = TRUE, addFinalizer = FALSE)
+            doc <- XML::htmlParse(filing.text, asText = TRUE, useInternalNodes = TRUE, addFinalizer = TRUE)
 			
             f.text <- XML::xpathSApply(doc, "//text()[not(ancestor::script)][not(ancestor::style)][not(ancestor::noscript)][not(ancestor::form)]", 
                 XML::xmlValue)
             f.text <- iconv(f.text, "latin1", "ASCII", sub = " ")
 
-            ## Free up htmlParse document to avoid memory leakage, this calls C function
-            #.Call('RS_XML_forceFreeDoc', doc, package= 'XML')
-            
         } else {
             f.text <- filing.text
         }
@@ -276,7 +296,7 @@ getSentiment <- function(cik.no, form.type, filing.year, useragent= "") {
         # hv.negative.count
         hv.negative.count <-  nrow(text_df[which(text_df$word %in% lm.dict$harvard.iv), ])
         
-        # Assign all the varibles
+        # Assign all the variables
         output$file.size[i] <- file.size
         output$word.count[i] <- word.count
         output$unique.word.count[i] <- unique.word.count
@@ -293,14 +313,11 @@ getSentiment <- function(cik.no, form.type, filing.year, useragent= "") {
         output$lm.litigious.count[i] <- lm.litigious.count
         output$hv.negative.count[i] <- hv.negative.count
         
-        # update progress bar
-        setTxtProgressBar(progress.bar, i)
-
-    }
+        if (i %% 10 == 0) {p()}
+        return(output)
+    })
     
-
-    # Close progress bar
-    close(progress.bar)
+    output <- do.call(rbind, results)
     
     #names(output)[names(output) == 'status'] <- 'downld.status'
     output$status <- NULL

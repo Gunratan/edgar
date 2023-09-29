@@ -7,9 +7,13 @@
 #' a user and provides information on the Form 8-K triggering events along with the firm 
 #' filing information. The function searches and imports existing downloaded 
 #' 8-K filings in the current directory; otherwise it downloads them using 
-#' \link[edgar]{getFilings} function. It then reads the 8-K filings and parses them 
+#' \link[edgar:getFilings]{getFilings} function. It then reads the 8-K filings and parses them 
 #' to extract events information. According to SEC EDGAR's guidelines a user also needs to 
-#' declare user agent. 
+#' declare user agent. The function uses the \link[future.apply:future_lapply]{future_lapply} 
+#' function to extract information in parallel. Please set \link[future:plan]{plan} 
+#' according to your needs before running the function. The progress bar
+#' can be controlled with the \link[progressr]{progressr} package. See in particular 
+#' \link[progressr:handlers]{handlers} 
 #' 
 #' @usage get8KItems(cik.no, filing.year, useragent)
 #' 
@@ -25,6 +29,12 @@
 #'   
 #' @examples
 #' \dontrun{
+#' library(future.apply)
+#' plan(multisession, workers = availableCores()-1)
+#' 
+#' # if a progress update is desired
+#' library(progressr)
+#' handlers(global = TRUE)
 #' 
 #' output <- get8KItems(cik.no = 38079, filing.year = 2005, useragent)
 #' ## Returns 8-K event information for CIK '38079' filed in year 2005.
@@ -32,10 +42,11 @@
 #' output <- get8KItems(cik.no = c(1000180,38079), 
 #'                      filing.year = c(2005, 2006), useragent) 
 #'}
+#' @export
+#' @importFrom progressr progressor handlers
+#' @importFrom future.apply future_lapply
 
 get8KItems <- function(cik.no, filing.year, useragent="") {
-    
-    f.type <- "8-K"
     
     ### Check for valid user agent
     if(useragent != ""){
@@ -70,15 +81,14 @@ get8KItems <- function(cik.no, filing.year, useragent="") {
     
     cat("Scraping 8-K filings...\n")
     
-    progress.bar <- txtProgressBar(min = 0, max = nrow(output), style = 3)
+    p <- progressr::progressor(along = 1:nrow(output))
     
-    ## Make new dataframe to store events info
-    output.8K.df <- data.frame()
-    
-    for (i in 1:nrow(output)) {
+    results <- future.apply::future_lapply(
+      X = 1:nrow(output),
+      FUN = function(i) {
         
-        dest.filename <- paste0("Edgar filings_full text/Form ", f.type, 
-                              "/", output$cik[i], "/", output$cik[i], "_", f.type, "_", 
+        dest.filename <- paste0(getwd(),"/","Edgar filings_full text/Form ", "8-K", 
+                              "/", output$cik[i], "/", output$cik[i], "_", "8-K", "_", 
                               output$date.filed[i], "_", output$accession.number[i], ".txt")
         
         filing.text <- readLines(dest.filename)
@@ -97,12 +107,13 @@ get8KItems <- function(cik.no, filing.year, useragent="") {
         temp.df <- data.frame(cik = output$cik[i], company.name = output$company.name[i], 
                               form.type= output$form.type[i], date.filed = output$date.filed[i],
                               event.info = event.info)
+        p()
 
-        output.8K.df <- rbind(output.8K.df, temp.df)
-        # update progress bar
-        setTxtProgressBar(progress.bar, i)
-    }
+        return(temp.df)
+    })
     
+    output.8K.df <- do.call(rbind, results)
+
     # # # convert dates into R dates
     output.8K.df$date.filed <- as.Date(as.character(output.8K.df$date.filed), "%Y-%m-%d")
     

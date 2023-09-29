@@ -42,6 +42,8 @@
 #' output <- getMgmtDisc(cik.no = c(1000180, 38079), 
 #'                       filing.year = c(2005, 2006), useragent)
 #'}
+#' @export
+#' @import XML utils
 
 getMgmtDisc <- function(cik.no, filing.year, useragent="" ) {
     
@@ -131,7 +133,7 @@ getMgmtDisc <- function(cik.no, filing.year, useragent="" ) {
           filing.text <- filing.text[(grep("<DOCUMENT>", filing.text, ignore.case = TRUE)[1]):(grep("</DOCUMENT>", 
                                                                                                     filing.text, ignore.case = TRUE)[1])]
         }, error = function(e) {
-          filing.text <- filing.text ## In case opening and closing DOCUMENT TAG not found, cosnider full web page
+          filing.text <- filing.text ## In case opening and closing DOCUMENT TAG not found, consider full web page
         })
         
         # See if 10-K is in XLBR or old text format

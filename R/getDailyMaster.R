@@ -23,7 +23,8 @@
 #' 
 #' output <- getDailyMaster('08/09/2016', useragent)
 #'} 
-
+#' @export
+#' @import utils
 
 getDailyMaster <- function(input.date, useragent="") {
     
@@ -125,7 +126,7 @@ getDailyMaster <- function(input.date, useragent="") {
             
             aa <- readLines(dfile)
             
-            if(any(grepl("For security purposes, and to ensure that the public service remains available to users, this government computer system", aa)) == FALSE){
+            if(any(grepl("For security purposes, and to ensure that the service remains available to users, this government computer system", aa)) == FALSE){
               
               break
             }

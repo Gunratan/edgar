@@ -40,6 +40,7 @@
 #' ## Returns all the filings information filed by the firm in all 
 #' the quarters of year 2006.
 #'}
+#' @export
 
 getFilingInfo <- function(firm.identifier, filing.year, quarter = c(1, 2, 3, 4),
                           form.type = "ALL", useragent="") {

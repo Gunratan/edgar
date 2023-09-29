@@ -41,6 +41,10 @@
 #'                      form.type = c("10-K", "10-K405","10KSB", "10KSB40"), 
 #'                      filing.year = c(2005, 2006), word.list, useragent) 
 #'}
+#' @export
+#' @importFrom XML htmlParse xpathSApply xmlValue
+#' @importFrom progressr progressor handlers
+#' @importFrom future.apply future_lapply
 
 searchFilings <- function(cik.no, form.type, filing.year, word.list, useragent = "") {
   
@@ -76,7 +80,7 @@ searchFilings <- function(cik.no, form.type, filing.year, word.list, useragent =
   
   cat("Searching filings for the input words...\n")
   
-  progress.bar <- txtProgressBar(min = 0, max = nrow(output), style = 3)
+  p <- progressr::progressor(along = 1:nrow(output))
   
   output$nword.hits <- NA
   
@@ -119,7 +123,9 @@ searchFilings <- function(cik.no, form.type, filing.year, word.list, useragent =
   new.dir <- "Keyword search results"
   dir.create(new.dir)
   
-  for (i in 1:nrow(output)) {
+  results <- future.apply::future_lapply(
+    X = 1:nrow(output),
+    FUN = function(i) {
     
     f.type <- gsub("/", "", output$form.type[i])
     year <- output$filing.year[i]
@@ -128,7 +134,7 @@ searchFilings <- function(cik.no, form.type, filing.year, word.list, useragent =
     date.filed <- output$date.filed[i]
     accession.number <- output$accession.number[i]
     
-    dest.filename <- paste0("Edgar filings_full text/Form ", f.type, 
+    dest.filename <- paste0(getwd(), "/", "Edgar filings_full text/Form ", f.type, 
                             "/", output$cik[i], "/", output$cik[i], "_", f.type, "_", 
                             output$date.filed[i], "_", output$accession.number[i], ".txt")
     
@@ -146,14 +152,11 @@ searchFilings <- function(cik.no, form.type, filing.year, word.list, useragent =
     # See if 10-K is in XLBR or old text format
     if (any(grepl(pattern = "<xml>|<type>xml|<html>|10k.htm", filing.text, ignore.case = T))) {
       
-      doc <- XML::htmlParse(filing.text, asText = TRUE, useInternalNodes = TRUE, addFinalizer = FALSE)
+      doc <- XML::htmlParse(filing.text, asText = TRUE, useInternalNodes = TRUE, addFinalizer = TRUE)
       
       f.text <- XML::xpathSApply(doc, "//text()[not(ancestor::script)][not(ancestor::style)][not(ancestor::noscript)][not(ancestor::form)]", 
                                  XML::xmlValue)
       f.text <- iconv(f.text, "latin1", "ASCII", sub = " ")
-      
-      ## Free up htmlParse document to avoid memory leakage, this calls C function
-      #.Call('RS_XML_forceFreeDoc', doc, package= 'XML')
       
     } else {
       f.text <- filing.text
@@ -218,22 +221,17 @@ searchFilings <- function(cik.no, form.type, filing.year, word.list, useragent =
                          '<p style="color:Blue;" align="center"><b>Detailed search result</b></p>',
                          "<hr style='margin-top:-1em' />", extract.text.highl) 
       
-      html.filename <- paste0(new.dir, '/',cik, "_", f.type, "_", date.filed, 
+      html.filename <- paste0(getwd(), "/", new.dir, '/',cik, "_", f.type, "_", date.filed, 
                               "_", accession.number, ".html")
       
       writeLines(complete.html, html.filename)
       
     }
     
-    # update progress bar
-    setTxtProgressBar(progress.bar, i)
+    if (i %% 10 == 0) {p()}
     
-  }
-  
-  
-  # Close progress bar
-  close(progress.bar)
-  
+  })
+
   #names(output)[names(output) == 'status'] <- 'downld.status'
   output$status <- NULL
   output$quarter <- NULL

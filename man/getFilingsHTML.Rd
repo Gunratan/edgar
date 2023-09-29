@@ -15,7 +15,7 @@ form.type = 'ALL' if need to download all forms.}
 
 \item{filing.year}{vector of four digit numeric year}
 
-\item{quarter}{vector of one digit quarter integer number. By deault, it is kept
+\item{quarter}{vector of one digit quarter integer number. By default, it is kept
 as c(1 ,2, 3, 4).}
 
 \item{useragent}{Should be in the form of "Your Name Contact@domain.com"}
